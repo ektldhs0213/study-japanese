@@ -62,6 +62,8 @@ const elements = {
   wordStudyStartDate: $("#wordStudyStartDate"),
   wordStudyEndDate: $("#wordStudyEndDate"),
   wordStudyFilterSummary: $("#wordStudyFilterSummary"),
+  wordStudyListCount: $("#wordStudyListCount"),
+  wordStudyList: $("#wordStudyList"),
   prevWordStudyBtn: $("#prevWordStudyBtn"),
   nextWordStudyBtn: $("#nextWordStudyBtn"),
   randomWordStudyBtn: $("#randomWordStudyBtn"),
@@ -83,8 +85,6 @@ const elements = {
   kanaGrid: $("#kanaGrid"),
   todaySentence: $("#todaySentence"),
   revealTodayBtn: $("#revealTodayBtn"),
-  generateTodayAiBtn: $("#generateTodayAiBtn"),
-  todayAiStatus: $("#todayAiStatus"),
   speakTodayBtn: $("#speakTodayBtn"),
   changeTodayBtn: $("#changeTodayBtn"),
   cardSentence: $("#cardSentence"),
@@ -309,7 +309,6 @@ function bindEvents() {
   elements.randomBtn.addEventListener("click", showRandomCard);
   elements.changeTodayBtn.addEventListener("click", changeTodaySentence);
   elements.revealTodayBtn.addEventListener("click", toggleTodayReveal);
-  elements.generateTodayAiBtn.addEventListener("click", changeTodaySentenceWithAi);
   elements.speakTodayBtn.addEventListener("click", () => speakSentence(getTodaySentence()));
   elements.speakCardBtn.addEventListener("click", () => speakSentence(getCurrentSentence()));
   elements.toggleMeaningBtn.addEventListener("click", toggleMeaning);
@@ -1776,6 +1775,7 @@ function renderWordStudy() {
     elements.wordStudyMeaning.classList.remove("hidden");
     elements.wordStudyReading.classList.add("hidden");
     elements.toggleWordStudyAnswerBtn.textContent = "답안 보기";
+    renderWordStudyList();
     return;
   }
 
@@ -1786,6 +1786,31 @@ function renderWordStudy() {
   elements.wordStudyMeaning.classList.toggle("hidden", !state.wordStudyShowAnswer);
   elements.wordStudyReading.classList.toggle("hidden", !state.wordStudyShowAnswer);
   elements.toggleWordStudyAnswerBtn.textContent = state.wordStudyShowAnswer ? "답안 숨기기" : "답안 보기";
+  renderWordStudyList();
+}
+
+function renderWordStudyList() {
+  const studyWords = getWordStudyWords();
+  elements.wordStudyListCount.textContent = `${studyWords.length}개`;
+
+  if (studyWords.length === 0) {
+    const message = state.wordStudyFilterMode === "dates" && state.wordStudySelectedDates.length === 0
+      ? "날짜를 하나 이상 선택해 주세요."
+      : "조건에 해당하는 단어가 없습니다.";
+    elements.wordStudyList.innerHTML = `<p class="helper-text">${message}</p>`;
+    return;
+  }
+
+  elements.wordStudyList.innerHTML = studyWords.map((word, index) => `
+    <article class="word-study-list-item">
+      <span class="word-list-number">${index + 1}</span>
+      <div>
+        <strong lang="ja">${escapeHtml(word.jp)}</strong>
+        <p>${escapeHtml(word.reading)} · ${escapeHtml(word.meaning)}</p>
+        <time datetime="${escapeHtml(word.createdDate || "")}">${escapeHtml(word.createdDate || "입력일 없음")}</time>
+      </div>
+    </article>
+  `).join("");
 }
 
 function getCurrentWordStudy() {
@@ -2129,16 +2154,6 @@ function changeTodaySentence() {
   showRandomTodayFromSentenceList();
 }
 
-async function changeTodaySentenceWithAi() {
-  if (state.aiSentences.length === 0) {
-    setAiStatus("AI 문장을 처음 만들고 있습니다. 잠시만 기다려 주세요.");
-    await generateSentencesWithAi({ focusToday: true });
-    return;
-  }
-
-  showRandomTodayFromSentenceList("목록에서 AI 문장 포함 랜덤으로 바꿨습니다.");
-}
-
 function showRandomTodayFromSentenceList(message = "목록에서 랜덤 문장으로 바꿨습니다.") {
   if (state.sentences.length === 0) {
     showToast("표시할 문장이 없습니다.");
@@ -2148,7 +2163,6 @@ function showRandomTodayFromSentenceList(message = "목록에서 랜덤 문장�
   state.todayIndex = randomIndex(state.sentences.length);
   state.todayRevealed = false;
   renderTodaySentence();
-  setAiStatus(message);
   showToast(message);
 }
 
@@ -2505,7 +2519,6 @@ function shortenMessage(message) {
 
 function setAiStatus(message) {
   elements.aiStatus.textContent = message;
-  elements.todayAiStatus.textContent = message;
 }
 
 function setGeminiKeyStatus(message) {
@@ -2514,8 +2527,6 @@ function setGeminiKeyStatus(message) {
 
 function setAiLoading(isLoading, label = "생성 중...") {
   elements.generateAiBtn.disabled = isLoading;
-  elements.generateTodayAiBtn.disabled = isLoading;
-  elements.generateTodayAiBtn.textContent = isLoading ? label : "랜덤 변경(with AI)";
   elements.generateAiBtn.textContent = isLoading ? label : "with AI";
 }
 

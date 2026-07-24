@@ -558,6 +558,63 @@ label {
   gap: 10px;
 }
 
+.word-study-list-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.compact-heading {
+  align-items: center;
+}
+
+.compact-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.word-study-list {
+  display: grid;
+  gap: 8px;
+}
+
+.word-study-list-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.word-study-list-item strong {
+  display: block;
+  font-size: 18px;
+}
+
+.word-study-list-item p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.word-study-list-item time,
+.word-list-number {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.word-list-number {
+  padding-top: 4px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .kana-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

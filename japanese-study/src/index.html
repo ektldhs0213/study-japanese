@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>일본어 문장 카드</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="style.css?v=202607242145" />
+    <link rel="stylesheet" href="style.css?v=202607242215" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">개인 일본어 학습 PWA</p>
         <h1>일본어 문장 카드</h1>
-        <p class="source-date">소스날짜 : 07월24일 21시 45분</p>
+        <p class="source-date">소스날짜 : 07월24일 22시 15분</p>
       </div>
       <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
     </header>
@@ -33,11 +33,9 @@
         </div>
         <div class="button-row">
           <button id="revealTodayBtn" type="button">문장 보기</button>
-          <button id="generateTodayAiBtn" type="button">랜덤 변경(with AI)</button>
           <button id="speakTodayBtn" type="button">발음 듣기</button>
           <button id="changeTodayBtn" type="button">랜덤 변경</button>
         </div>
-        <p id="todayAiStatus" class="helper-text"></p>
       </section>
 
       <nav class="tabs" aria-label="학습 메뉴">
@@ -113,6 +111,14 @@
           <button id="speakWordStudyBtn" type="button">발음 듣기</button>
           <button id="shuffleWordStudyBtn" type="button">섞기</button>
         </div>
+
+        <section class="word-study-list-section" aria-labelledby="wordStudyListTitle">
+          <div class="section-heading compact-heading">
+            <h3 id="wordStudyListTitle">학습 단어 목록</h3>
+            <span id="wordStudyListCount" class="count-badge">0개</span>
+          </div>
+          <div id="wordStudyList" class="word-study-list"></div>
+        </section>
       </section>
 
       <section id="kanaPanel" class="panel" aria-labelledby="kanaTitle">
@@ -232,22 +238,6 @@
           </div>
         </div>
 
-        <div class="management-section">
-          <div>
-            <p class="eyebrow">단어장 백업</p>
-            <h3>백업과 복원</h3>
-          </div>
-          <div class="manage-actions">
-            <button id="exportBtn" type="button">JSON 내보내기</button>
-            <label class="file-button">
-              JSON 가져오기
-              <input id="importInput" type="file" accept="application/json" />
-            </label>
-            <button id="clearBtn" class="ghost-button" type="button">이 기기 캐시 초기화</button>
-          </div>
-          <textarea id="exportOutput" rows="8" readonly placeholder="내보낸 JSON이 여기에 표시됩니다."></textarea>
-        </div>
-
         <div class="management-section api-key-box">
           <div>
             <p class="eyebrow">Supabase 프로젝트 확인</p>
@@ -275,14 +265,30 @@
           <button id="testAiConnectionBtn" type="button">AI 연결 테스트</button>
           <p id="aiConnectionStatus" class="connection-status">아직 테스트하지 않았습니다.</p>
         </div>
+
+        <div class="management-section">
+          <div>
+            <p class="eyebrow">단어장 백업</p>
+            <h3>백업과 복원</h3>
+          </div>
+          <div class="manage-actions">
+            <button id="exportBtn" type="button">JSON 내보내기</button>
+            <label class="file-button">
+              JSON 가져오기
+              <input id="importInput" type="file" accept="application/json" />
+            </label>
+            <button id="clearBtn" class="ghost-button" type="button">이 기기 캐시 초기화</button>
+          </div>
+          <textarea id="exportOutput" rows="8" readonly placeholder="내보낸 JSON이 여기에 표시됩니다."></textarea>
+        </div>
       </section>
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="config.js"></script>
-    <script src="lib/supabase.js?v=202607242145"></script>
-    <script src="services/japaneseService.js?v=202607242145"></script>
-    <script src="app.js?v=202607242145"></script>
+    <script src="lib/supabase.js?v=202607242215"></script>
+    <script src="services/japaneseService.js?v=202607242215"></script>
+    <script src="app.js?v=202607242215"></script>
   </body>
 </html>
