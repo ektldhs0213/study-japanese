@@ -1,0 +1,7 @@
+.env
+dist/
+japanese-study/dist/
+boardgame-score/dist/
+node_modules/
+npm-debug.log*
+.DS_Store

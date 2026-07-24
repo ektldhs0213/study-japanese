@@ -1,0 +1,24 @@
+{
+  "name": "일본어 문장 카드",
+  "short_name": "일본어카드",
+  "description": "입력한 일본어 단어와 히라가나, 가타카나를 카드, 목록, 퀴즈로 학습하는 개인용 PWA입니다.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%231d1d1f'/%3E%3Ctext x='96' y='122' text-anchor='middle' font-size='78' font-family='Arial' fill='white'%3E%E3%81%82%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='102' fill='%231d1d1f'/%3E%3Ctext x='256' y='326' text-anchor='middle' font-size='210' font-family='Arial' fill='white'%3E%E3%81%82%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <title>일본어 문장 카드</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="style.css?v=202607241200" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">개인 일본어 학습 PWA</p>
+        <h1>일본어 문장 카드</h1>
+        <p class="source-date">소스날짜 : 07월24일 14시 36분</p>
+      </div>
+      <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
+    </header>
+
+    <main class="app-shell">
+      <section class="today-card" aria-labelledby="todayTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">오늘의 문장</p>
+            <h2 id="todayTitle">매일 한 문장씩 익히기</h2>
+          </div>
+        </div>
+        <div id="todaySentence" class="sentence-display">
+          <p class="meaning">단어를 추가하면 오늘의 문장이 표시됩니다.</p>
+          <p class="jp hidden">예: かんこくじん</p>
+          <p class="reading hidden">예: 캉코쿠진</p>
+        </div>
+        <div class="button-row">
+          <button id="revealTodayBtn" type="button">문장 보기</button>
+          <button id="generateTodayAiBtn" type="button">랜덤 변경(with AI)</button>
+          <button id="speakTodayBtn" type="button">발음 듣기</button>
+          <button id="changeTodayBtn" type="button">랜덤 변경</button>
+        </div>
+        <p id="todayAiStatus" class="helper-text"></p>
+      </section>
+
+      <nav class="tabs" aria-label="학습 메뉴">
+        <button class="tab active" data-tab="words" type="button">단어 입력</button>
+        <button class="tab" data-tab="wordStudy" type="button">단어 암기</button>
+        <button class="tab" data-tab="kana" type="button">가나</button>
+        <button class="tab" data-tab="sentences" type="button">문장</button>
+        <button class="tab" data-tab="manage" type="button">관리</button>
+      </nav>
+
+      <section id="wordsPanel" class="panel active" aria-labelledby="wordsTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">단어장</p>
+            <h2 id="wordsTitle">배운 단어 입력</h2>
+          </div>
+          <div class="heading-actions">
+            <span id="wordCount" class="count-badge">0개</span>
+            <button id="clearWordsBtn" class="small-button danger-button" type="button">단어 전체 삭제</button>
+          </div>
+        </div>
+
+        <form id="wordForm" class="word-form">
+          <label>
+            일본어
+            <input id="jpInput" type="text" placeholder="かんこくじん" autocomplete="off" required />
+          </label>
+          <label>
+            한국어 발음
+            <input id="readingInput" type="text" placeholder="캉코쿠진" autocomplete="off" required />
+          </label>
+          <label>
+            한국어 뜻
+            <input id="meaningInput" type="text" placeholder="한국인" autocomplete="off" required />
+          </label>
+          <label>
+            pos
+            <input id="categoryInput" type="text" placeholder="noun" autocomplete="off" required />
+          </label>
+          <label>
+            semanticTags
+            <input id="semanticTagsInput" type="text" placeholder="place,facility" autocomplete="off" required />
+          </label>
+          <label>
+            입력일
+            <input id="wordDateInput" type="date" required />
+          </label>
+          <button type="submit">단어 저장</button>
+        </form>
+
+        <div class="quick-add">
+          <label>
+            일괄 입력일
+            <input id="bulkDateInput" type="date" />
+          </label>
+          <label for="bulkInput">여러 줄 빠른 입력</label>
+          <textarea id="bulkInput" rows="9" placeholder="わたし/와타시/나, 저/pronoun/person,human&#10;みせ/미세/가게/noun/place,facility&#10;おいしい/오이시이/맛있다/i_adjective/taste,food"></textarea>
+          <button id="bulkAddBtn" type="button">여러 단어 저장</button>
+        </div>
+
+        <div id="wordList" class="word-list"></div>
+      </section>
+
+      <section id="wordStudyPanel" class="panel" aria-labelledby="wordStudyTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">단어 암기</p>
+            <h2 id="wordStudyTitle">일본어 단어 외우기</h2>
+          </div>
+          <span id="wordStudyPosition" class="count-badge">0 / 0</span>
+        </div>
+
+        <article class="kana-card word-study-card">
+          <p id="wordStudyJapanese" class="kana-character">単語</p>
+          <p id="wordStudyMeaning" class="kana-romaji hidden">뜻</p>
+          <p id="wordStudyReading" class="kana-korean hidden">발음</p>
+        </article>
+
+        <label class="word-study-filter">
+          입력 날짜 필터
+          <select id="wordStudyDateFilter">
+            <option value="all">전체 단어</option>
+          </select>
+        </label>
+
+        <div class="button-grid">
+          <button id="prevWordStudyBtn" type="button">이전</button>
+          <button id="nextWordStudyBtn" type="button">다음</button>
+          <button id="randomWordStudyBtn" type="button">랜덤</button>
+          <button id="toggleWordStudyAnswerBtn" type="button">답안 보기</button>
+          <button id="speakWordStudyBtn" type="button">발음 듣기</button>
+          <button id="shuffleWordStudyBtn" type="button">섞기</button>
+        </div>
+      </section>
+
+      <section id="kanaPanel" class="panel" aria-labelledby="kanaTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">히라가나 · 가타카나</p>
+            <h2 id="kanaTitle">가나 외우기</h2>
+          </div>
+          <span id="kanaProgress" class="count-badge">0 / 0</span>
+        </div>
+
+        <div class="segmented-control" role="group" aria-label="문자 종류 선택">
+          <button id="hiraganaModeBtn" class="active" type="button">히라가나</button>
+          <button id="katakanaModeBtn" type="button">가타카나</button>
+        </div>
+
+        <article class="kana-card">
+          <p id="kanaCharacter" class="kana-character">あ</p>
+          <p id="kanaRomaji" class="kana-romaji hidden">a</p>
+          <p id="kanaKorean" class="kana-korean hidden">아</p>
+        </article>
+
+        <div class="button-grid">
+          <button id="prevKanaBtn" type="button">이전</button>
+          <button id="nextKanaBtn" type="button">다음</button>
+          <button id="randomKanaBtn" type="button">랜덤</button>
+          <button id="toggleKanaAnswerBtn" type="button">답 보기</button>
+          <button id="speakKanaBtn" type="button">발음 듣기</button>
+          <button id="shuffleKanaBtn" type="button">표 섞기</button>
+        </div>
+
+        <div id="kanaGrid" class="kana-grid" aria-label="가나 표"></div>
+      </section>
+
+      <section id="sentencesPanel" class="panel" aria-labelledby="sentencesTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">문장 학습</p>
+            <h2 id="sentencesTitle">카드와 문장 목록</h2>
+          </div>
+          <div class="heading-actions">
+            <span id="cardPosition" class="count-badge">0 / 0</span>
+            <span id="sentenceCount" class="count-badge">0개</span>
+            <label class="switch">
+              <input id="favoritesOnlyInput" type="checkbox" />
+              즐겨찾기만
+            </label>
+          </div>
+        </div>
+
+        <article class="study-card">
+          <div id="cardSentence" class="sentence-display">
+            <p class="jp">문장이 없습니다.</p>
+            <p class="reading">단어를 먼저 입력해 주세요.</p>
+            <p class="meaning">생성된 문장이 여기에 표시됩니다.</p>
+          </div>
+          <div class="mark-row">
+            <button id="favoriteBtn" class="ghost-button" type="button">즐겨찾기</button>
+            <button id="hardBtn" class="ghost-button" type="button">어려움</button>
+          </div>
+        </article>
+
+        <div class="button-grid">
+          <button id="prevBtn" type="button">이전</button>
+          <button id="nextBtn" type="button">다음</button>
+          <button id="randomBtn" type="button">랜덤</button>
+          <button id="toggleMeaningBtn" type="button">뜻 숨기기</button>
+          <button id="toggleReadingBtn" type="button">발음 숨기기</button>
+          <button id="speakCardBtn" type="button">현재 카드 읽기</button>
+        </div>
+
+        <label class="range-label">
+          읽기 속도
+          <input id="rateInput" type="range" min="0.5" max="1.4" step="0.1" value="0.9" />
+          <span id="rateValue">0.9x</span>
+        </label>
+
+        <div class="style-options">
+          <label>
+            일본어 문체
+            <select id="jpStyleSelect">
+              <option value="polite" selected>존댓말</option>
+              <option value="plain">반말</option>
+            </select>
+          </label>
+          <label>
+            한국어 문체
+            <select id="krStyleSelect">
+              <option value="polite" selected>존댓말</option>
+              <option value="plain">반말</option>
+            </select>
+          </label>
+          <label>
+            번역 방식
+            <select id="translationModeSelect">
+              <option value="natural" selected>자연번역</option>
+              <option value="literal">직역</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="tools">
+          <input id="searchInput" type="search" placeholder="문장, 발음, 뜻 검색" />
+          <button id="generateAiBtn" type="button">with AI</button>
+          <button id="copyAllBtn" type="button">전체 복사</button>
+          <button id="shuffleListBtn" type="button">랜덤 정렬</button>
+        </div>
+        <p id="aiStatus" class="helper-text">Supabase Edge Function이 연결되면 등록한 단어 기반으로 자연스러운 문장을 만들 수 있습니다.</p>
+        <div id="sentenceList" class="sentence-list"></div>
+      </section>
+
+      <section id="managePanel" class="panel" aria-labelledby="manageTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">관리</p>
+            <h2 id="manageTitle">단어장 백업</h2>
+          </div>
+        </div>
+
+        <div class="manage-actions">
+          <button id="exportBtn" type="button">JSON 내보내기</button>
+          <label class="file-button">
+            JSON 가져오기
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+          <button id="clearBtn" class="danger-button" type="button">전체 삭제</button>
+        </div>
+        <div class="api-key-box">
+          <label>
+            Supabase 프로젝트
+            <input id="geminiApiKeyInput" type="text" placeholder="Cloudflare 빌드 환경변수에서 설정" autocomplete="off" readonly />
+          </label>
+          <div class="button-row">
+            <button id="saveGeminiKeyBtn" type="button">설정 확인</button>
+            <button id="testGeminiKeyBtn" class="ghost-button" type="button">Supabase 연결 테스트</button>
+            <button id="clearGeminiKeyBtn" class="ghost-button" type="button">상태 새로고침</button>
+          </div>
+          <p class="helper-text">Supabase URL과 anon key는 Cloudflare Pages 환경변수에서 설정합니다. Gemini 키는 Supabase Edge Function secret으로만 관리합니다.</p>
+          <p id="geminiKeyStatus" class="helper-text"></p>
+        </div>
+        <textarea id="exportOutput" rows="8" readonly placeholder="내보낸 JSON이 여기에 표시됩니다."></textarea>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="config.js"></script>
+    <script src="lib/supabase.js"></script>
+    <script src="auth/authProvider.js"></script>
+    <script src="services/japaneseService.js"></script>
+    <script src="app.js?v=202607241200"></script>
+  </body>
+</html>

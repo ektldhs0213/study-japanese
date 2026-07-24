@@ -1,0 +1,13 @@
+{
+  "name": "study-services-cloudflare-supabase",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:japanese && npm run build:boardgame",
+    "build:japanese": "npm --prefix japanese-study run build",
+    "build:boardgame": "npm --prefix boardgame-score run build",
+    "dev:japanese": "npm --prefix japanese-study run dev",
+    "dev:boardgame": "npm --prefix boardgame-score run dev"
+  }
+}
