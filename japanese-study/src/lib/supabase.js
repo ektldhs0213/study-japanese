@@ -14,7 +14,11 @@
       "Content-Type": "application/json",
       ...options.headers
     };
-    const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+    const response = await fetch(`${baseUrl}${path}`, {
+      ...options,
+      headers,
+      cache: "no-store"
+    });
     const body = response.status === 204 ? null : await response.json().catch(() => null);
     if (!response.ok) {
       const error = new Error(body?.message || body?.error_description || `Supabase request failed (${response.status})`);

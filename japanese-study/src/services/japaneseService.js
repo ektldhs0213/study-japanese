@@ -6,7 +6,20 @@
     return encodeURIComponent(value);
   }
 
+  function normalizeStudyDate(value) {
+    const text = String(value || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
+    const [year, month, day] = text.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year
+      && date.getUTCMonth() === month - 1
+      && date.getUTCDate() === day
+      ? text
+      : "";
+  }
+
   function toAppWord(row) {
+    const studyDate = normalizeStudyDate(row.study_date);
     return {
       id: row.id,
       jp: row.japanese,
@@ -15,8 +28,8 @@
       pos: row.pos,
       semanticTags: Array.isArray(row.semantic_tags) ? row.semantic_tags : [],
       createdAt: row.created_at,
-      studyDate: String(row.study_date || "").slice(0, 10),
-      createdDate: String(row.study_date || "").slice(0, 10),
+      studyDate,
+      createdDate: studyDate,
       syncStatus: "synced"
     };
   }
@@ -40,13 +53,16 @@
         .sort((first, second) => String(second.studyDate).localeCompare(String(first.studyDate)));
     },
     async saveWord(word) {
+      const studyDate = normalizeStudyDate(word.studyDate);
+      if (!studyDate) throw new Error("study_date는 YYYY-MM-DD 형식의 유효한 날짜여야 합니다.");
       const record = {
         japanese: String(word.jp || word.japanese || "").normalize("NFKC").trim(),
         reading: word.reading,
         meaning: word.meaning,
         pos: String(word.pos || word.category || "").trim().toLowerCase(),
         semantic_tags: word.semanticTags || word.semantic_tags || [],
-        study_date: word.studyDate || word.createdDate || new Date().toISOString().slice(0, 10)
+        created_at: `${studyDate}T00:00:00.000Z`,
+        study_date: studyDate
       };
       const rows = await global.SupabaseClient.rest("jp_words", "?on_conflict=japanese,pos&select=*", {
         method: "POST",

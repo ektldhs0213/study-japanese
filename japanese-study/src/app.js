@@ -745,7 +745,7 @@ function cleanStoredSentence(sentence) {
 
 function migrateWord(word) {
   const legacyCategory = cleanInputPart(word.legacyCategory || word.category || "미분류");
-  const requestedDate = cleanInputPart(word.studyDate || word.createdDate);
+  const requestedDate = normalizeStudyDateKey(word.studyDate);
   const createdAt = cleanInputPart(word.createdAt) || (requestedDate ? `${requestedDate}T00:00:00.000` : new Date().toISOString());
   const createdDate = requestedDate || dateKeyFromValue(createdAt);
   const inferred = inferWordMetadata({ ...word, legacyCategory });
@@ -1180,7 +1180,23 @@ function parseBulkMetadata(parts, currentCategory, isJapaneseFirstFormat = false
 }
 
 function isDateKey(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+  return Boolean(normalizeStudyDateKey(value));
+}
+
+function normalizeStudyDateKey(value) {
+  const text = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
+  const [year, month, day] = text.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day
+    ? text
+    : "";
+}
+
+function getWordStudyDate(word) {
+  return normalizeStudyDateKey(word?.studyDate);
 }
 
 function generateSentences() {
@@ -1958,14 +1974,15 @@ function shuffleWordStudy() {
 function getWordStudyWords() {
   if (state.wordStudyFilterMode === "dates") {
     if (state.wordStudySelectedDates.length === 0) return [];
-    return state.words.filter((word) => state.wordStudySelectedDates.includes(word.studyDate));
+    return state.words.filter((word) => state.wordStudySelectedDates.includes(getWordStudyDate(word)));
   }
 
   if (state.wordStudyFilterMode === "range") {
     return state.words.filter((word) => {
-      if (!word.studyDate) return false;
-      if (state.wordStudyStartDate && word.studyDate < state.wordStudyStartDate) return false;
-      if (state.wordStudyEndDate && word.studyDate > state.wordStudyEndDate) return false;
+      const studyDate = getWordStudyDate(word);
+      if (!studyDate) return false;
+      if (state.wordStudyStartDate && studyDate < state.wordStudyStartDate) return false;
+      if (state.wordStudyEndDate && studyDate > state.wordStudyEndDate) return false;
       return true;
     });
   }
@@ -1974,12 +1991,12 @@ function getWordStudyWords() {
 }
 
 function renderWordStudyFilters() {
-  const dates = [...new Set(state.words.map((word) => word.studyDate).filter(Boolean))].sort().reverse();
+  const dates = [...new Set(state.words.map(getWordStudyDate).filter(Boolean))].sort().reverse();
   state.wordStudySelectedDates = state.wordStudySelectedDates.filter((date) => dates.includes(date));
 
   elements.wordStudyDateOptions.innerHTML = dates.length
     ? dates.map((date) => {
-        const count = state.words.filter((word) => word.studyDate === date).length;
+        const count = state.words.filter((word) => getWordStudyDate(word) === date).length;
         const checked = state.wordStudySelectedDates.includes(date) ? " checked" : "";
         return `
           <label class="date-filter-chip">

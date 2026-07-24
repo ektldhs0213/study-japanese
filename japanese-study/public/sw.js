@@ -1,12 +1,12 @@
-const CACHE_NAME = "japanese-sentence-card-v202607250048";
+const CACHE_NAME = "japanese-sentence-card-v202607250103";
 const APP_FILES = [
   "./",
   "./index.html",
   "./config.js",
-  "./lib/supabase.js?v=202607250048",
-  "./services/japaneseService.js?v=202607250048",
-  "./style.css?v=202607250048",
-  "./app.js?v=202607250048",
+  "./lib/supabase.js?v=202607250103",
+  "./services/japaneseService.js?v=202607250103",
+  "./style.css?v=202607250103",
+  "./app.js?v=202607250103",
   "./manifest.json"
 ];
 
@@ -34,6 +34,8 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
   if (url.pathname.endsWith("/config.js") || event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
