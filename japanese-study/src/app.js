@@ -64,7 +64,6 @@ const elements = {
   wordStudyRangeFields: $("#wordStudyRangeFields"),
   wordStudyStartDate: $("#wordStudyStartDate"),
   wordStudyEndDate: $("#wordStudyEndDate"),
-  wordStudyFilterSummary: $("#wordStudyFilterSummary"),
   wordStudyDataStatus: $("#wordStudyDataStatus"),
   wordStudyListCount: $("#wordStudyListCount"),
   wordStudyList: $("#wordStudyList"),
@@ -2006,16 +2005,6 @@ function renderWordStudyFilters() {
   elements.wordStudyStartDate.value = state.wordStudyStartDate;
   elements.wordStudyEndDate.value = state.wordStudyEndDate;
 
-  const filteredCount = getWordStudyWords().length;
-  if (state.wordStudyFilterMode === "dates") {
-    elements.wordStudyFilterSummary.textContent = `${state.wordStudySelectedDates.length}개 날짜 · ${filteredCount}개 단어`;
-  } else if (state.wordStudyFilterMode === "range") {
-    const start = state.wordStudyStartDate || "처음";
-    const end = state.wordStudyEndDate || "오늘";
-    elements.wordStudyFilterSummary.textContent = `${start} ~ ${end} · ${filteredCount}개 단어`;
-  } else {
-    elements.wordStudyFilterSummary.textContent = `전체 단어 ${state.words.length}개`;
-  }
 }
 
 function toggleWordStudyDateList() {

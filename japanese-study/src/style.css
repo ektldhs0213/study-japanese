@@ -263,7 +263,7 @@ label {
   padding: 0 8px;
   background: var(--surface-strong);
   color: var(--text);
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .tab:hover {
@@ -511,6 +511,10 @@ label {
 
 .helper-text {
   margin: 0;
+}
+
+#aiStatus:empty {
+  display: none;
 }
 
 #geminiKeyStatus {
@@ -1008,15 +1012,11 @@ label {
     font-size: 10px;
   }
 
-  .date-range-fields {
-    grid-template-columns: 1fr;
-  }
-
   .tab {
     min-width: 0;
     min-height: 52px;
     padding: 0 3px;
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1.15;
     overflow-wrap: anywhere;
   }
