@@ -618,18 +618,18 @@ label {
 .kana-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: min(100%, 640px);
-  margin: 0 auto;
+  width: 100%;
   gap: 8px;
 }
 
 .kana-tile {
   display: grid;
   gap: 4px;
-  min-height: 82px;
+  min-height: 88px;
+  width: 100%;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--surface-strong);
   color: var(--text);
   cursor: pointer;
