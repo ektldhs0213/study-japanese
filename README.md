@@ -68,9 +68,9 @@ Japanese Study: http://localhost:4173
 Boardgame Score: http://localhost:4174
 ```
 
-개발 서버는 환경변수가 없는 상태에서도 열립니다. 이 경우 기존 일본어
-PWA의 localStorage 및 오프라인 기능은 그대로 사용할 수 있지만 Supabase
-동기화와 AI Pages Function은 비활성화됩니다.
+개발 서버는 환경변수가 없는 상태에서도 열립니다. 다만 단어 데이터는
+Supabase만 사용하므로 환경변수가 없으면 단어 조회와 저장 및 AI Pages
+Function이 비활성화됩니다.
 
 ## 빌드
 
@@ -193,9 +193,10 @@ UI
   -> Supabase REST / Cloudflare Pages Functions
 ```
 
-`localStorage`는 일본어 PWA의 오프라인 사용과 기존 데이터 보존을 위해
-유지됩니다. 온라인에서는 Supabase 공용 단어를 우선 조회하고, 오프라인
-입력은 localStorage에 대기시킨 뒤 연결이 복구되면 자동 동기화합니다.
+단어 데이터는 Supabase `jp_words`만 단일 원본으로 사용합니다.
+localStorage에 남아 있던 단어는 앱 시작 시 제거하며, Supabase 조회 실패
+시 오래된 로컬 단어를 대신 표시하거나 자동 재업로드하지 않습니다.
+문장 표시 설정과 학습 표시는 localStorage에 계속 저장됩니다.
 
 ## PWA 확인
 
@@ -214,7 +215,7 @@ _redirects
 
 ## 기존 데이터 이동
 
-기존 단어와 문장은 삭제되지 않습니다. 브라우저의 localStorage 데이터는
-그대로 유지되며 기존 JSON 내보내기/가져오기도 계속 사용할 수 있습니다.
+공용 단어는 Supabase에서만 관리합니다. 기존 localStorage 단어는 화면이나
+연결 테스트 결과에 포함되지 않습니다.
 처음 온라인으로 실행하면 기존 localStorage 단어도 Supabase 공용 단어장에
 순차 동기화됩니다.

@@ -161,13 +161,14 @@ async function init() {
 }
 
 function loadData() {
-  state.words = readJson(STORAGE_KEY, []).map(cleanStoredWord).filter(Boolean);
+  state.words = [];
+  localStorage.removeItem(STORAGE_KEY);
   state.marks = readJson(MARKS_KEY, {});
-  state.aiSentences = readJson(AI_SENTENCES_KEY, []).map(cleanStoredSentence);
+  state.aiSentences = [];
+  localStorage.removeItem(AI_SENTENCES_KEY);
   state.generationOptions = normalizeSentenceStyle(readJson(GENERATION_OPTIONS_KEY, state.generationOptions));
   elements.geminiApiKeyInput.value = getSupabaseDisplayUrl();
   setGeminiKeyStatus(getSupabaseStatusMessage());
-  saveWords();
   saveAiSentences();
 }
 
@@ -180,7 +181,7 @@ function readJson(key, fallback) {
 }
 
 function saveWords() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.words));
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 async function loadWordsFromSupabase() {
@@ -188,40 +189,31 @@ async function loadWordsFromSupabase() {
 
   state.remoteSyncing = true;
   try {
-    const localPending = state.words.filter((word) => word.syncStatus !== "synced");
-    const remoteWords = (await window.JapaneseService.listWords())
+    const [wordRows, sentenceRows] = await Promise.all([
+      window.JapaneseService.listWords(),
+      window.JapaneseService.listSentences()
+    ]);
+    const remoteWords = wordRows
       .map(cleanStoredWord)
       .filter(Boolean);
-    const mergedWords = [...remoteWords];
+    const remoteSentences = sentenceRows
+      .map((sentence) => cleanStoredSentence({ ...sentence, category: "AI" }))
+      .filter((sentence) => sentence.jp && sentence.reading && sentence.meaning);
 
-    for (const word of localPending) {
-      const remoteIndex = mergedWords.findIndex((remoteWord) => isSameWord(remoteWord, word));
-
-      try {
-        const savedWord = await window.JapaneseService.saveWord(word);
-        const syncedWord = cleanStoredWord({ ...savedWord, syncStatus: "synced" });
-        if (remoteIndex >= 0) mergedWords[remoteIndex] = syncedWord;
-        else mergedWords.push(syncedWord);
-      } catch {
-        const pendingWord = { ...word, syncStatus: "pending" };
-        if (remoteIndex >= 0) mergedWords[remoteIndex] = pendingWord;
-        else mergedWords.push(pendingWord);
-      }
-    }
-
-    state.words = mergedWords;
+    state.words = remoteWords;
+    state.aiSentences = remoteSentences;
     saveWords();
+    saveAiSentences();
     generateSentences();
     renderAll();
-    const pendingCount = state.words.filter((word) => word.syncStatus !== "synced").length;
-    setGeminiKeyStatus(
-      pendingCount > 0
-        ? `Supabase 조회 성공 · 공용 단어 ${remoteWords.length}개 · 동기화 대기 ${pendingCount}개`
-        : `Supabase 조회 성공 · 공용 단어 ${remoteWords.length}개`
-    );
+    setGeminiKeyStatus(`Supabase 조회 성공 · DB 단어 ${remoteWords.length}개 · DB 문장 ${remoteSentences.length}개`);
     return true;
   } catch (error) {
-    setGeminiKeyStatus(`Supabase 조회 실패 · localStorage 사용 중 (${shortenMessage(error.message)})`);
+    state.words = state.words.filter((word) => word.syncStatus === "synced");
+    state.aiSentences = [];
+    generateSentences();
+    renderAll();
+    setGeminiKeyStatus(`Supabase 조회 실패 · DB 데이터를 불러오지 못했습니다. (${shortenMessage(error.message)})`);
     return false;
   } finally {
     state.remoteSyncing = false;
@@ -230,9 +222,11 @@ async function loadWordsFromSupabase() {
 
 async function syncWordToSupabase(word, options = {}) {
   if (!window.JapaneseService?.isRemoteReady() || !navigator.onLine) {
-    word.syncStatus = "pending";
+    state.words = state.words.filter((item) => item.syncStatus === "synced");
     saveWords();
-    if (!options.silent) showToast("로컬 저장 완료 · 온라인 연결 후 Supabase에 동기화됩니다.");
+    generateSentences();
+    renderAll();
+    if (!options.silent) showToast("Supabase에 연결되지 않아 단어를 저장하지 못했습니다.");
     return false;
   }
 
@@ -246,18 +240,26 @@ async function syncWordToSupabase(word, options = {}) {
     if (!options.silent) showToast("로컬 및 Supabase 저장 완료");
     return true;
   } catch (error) {
-    word.syncStatus = "pending";
+    state.words = state.words.filter((item) => item.syncStatus === "synced");
     saveWords();
-    renderWordStudyFilters();
+    generateSentences();
+    renderAll();
     if (!options.silent) {
-      showToast(`로컬 저장 완료 · Supabase 저장 실패 (${shortenMessage(error.message)})`);
+      showToast(`Supabase 저장 실패 · 단어를 반영하지 않았습니다. (${shortenMessage(error.message)})`);
     }
     return false;
   }
 }
 
 async function syncPendingWords() {
-  if (state.remoteSyncing || !navigator.onLine) return;
+  if (state.remoteSyncing) return;
+  if (!navigator.onLine) {
+    state.words = state.words.filter((word) => word.syncStatus === "synced");
+    generateSentences();
+    renderAll();
+    showToast("오프라인에서는 단어를 저장할 수 없습니다.");
+    return;
+  }
   const pendingWords = state.words.filter((word) => word.syncStatus !== "synced");
   for (const word of pendingWords) {
     await syncWordToSupabase(word, { silent: true });
@@ -270,7 +272,7 @@ function saveMarks() {
 }
 
 function saveAiSentences() {
-  localStorage.setItem(AI_SENTENCES_KEY, JSON.stringify(state.aiSentences));
+  localStorage.removeItem(AI_SENTENCES_KEY);
 }
 
 function saveGenerationOptions() {
@@ -2298,6 +2300,7 @@ async function generateSentencesWithAi(options = {}) {
     }
 
     state.aiSentences = aiSentences;
+    await Promise.all(state.aiSentences.map((sentence) => window.JapaneseService.saveSentence(sentence)));
     saveAiSentences();
     generateSentences();
     state.currentIndex = 0;

@@ -78,6 +78,13 @@
       return rows.map(toAppSentence);
     },
     async saveSentence(sentence) {
+      const japanese = encode(sentence.jp || sentence.japanese);
+      const existingRows = await global.SupabaseClient.rest(
+        "jp_sentences",
+        `?select=*&japanese=eq.${japanese}&limit=1`
+      );
+      if (existingRows.length > 0) return toAppSentence(existingRows[0]);
+
       const rows = await global.SupabaseClient.rest("jp_sentences", {
         method: "POST",
         headers: jsonHeaders,
