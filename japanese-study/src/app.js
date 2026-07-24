@@ -189,17 +189,32 @@ async function loadWordsFromSupabase() {
   state.remoteSyncing = true;
   try {
     const localPending = state.words.filter((word) => word.syncStatus !== "synced");
+    const remoteWords = (await window.JapaneseService.listWords())
+      .map(cleanStoredWord)
+      .filter(Boolean);
+    const mergedWords = [...remoteWords];
+
     for (const word of localPending) {
-      const synced = await syncWordToSupabase(word, { silent: true });
-      if (!synced) throw new Error("대기 중인 로컬 단어를 Supabase에 동기화하지 못했습니다.");
+      if (mergedWords.some((remoteWord) => isSameWord(remoteWord, word))) continue;
+
+      try {
+        const savedWord = await window.JapaneseService.saveWord(word);
+        mergedWords.push(cleanStoredWord({ ...savedWord, syncStatus: "synced" }));
+      } catch {
+        mergedWords.push({ ...word, syncStatus: "pending" });
+      }
     }
 
-    const remoteWords = await window.JapaneseService.listWords();
-    state.words = remoteWords.map(cleanStoredWord).filter(Boolean);
+    state.words = mergedWords;
     saveWords();
     generateSentences();
     renderAll();
-    setGeminiKeyStatus(`Supabase 연결됨 · 공용 단어 ${state.words.length}개`);
+    const pendingCount = state.words.filter((word) => word.syncStatus !== "synced").length;
+    setGeminiKeyStatus(
+      pendingCount > 0
+        ? `Supabase 조회 성공 · 공용 단어 ${remoteWords.length}개 · 동기화 대기 ${pendingCount}개`
+        : `Supabase 조회 성공 · 공용 단어 ${remoteWords.length}개`
+    );
     return true;
   } catch (error) {
     setGeminiKeyStatus(`Supabase 조회 실패 · localStorage 사용 중 (${shortenMessage(error.message)})`);
@@ -2305,10 +2320,11 @@ async function testGeminiApiKey() {
   setAiStatus("Supabase 연결을 테스트하고 있습니다...");
 
   try {
-    await window.JapaneseService.testConnection();
+    const remoteWords = await window.JapaneseService.listWords();
+    await loadWordsFromSupabase();
     setAiStatus("Supabase 연결 테스트 성공.");
-    setGeminiKeyStatus("Supabase 연결 성공. 공용 단어장을 조회하고 저장할 수 있습니다.");
-    showToast("Supabase 연결이 정상입니다.");
+    setGeminiKeyStatus(`Supabase 연결 성공 · 테이블 단어 ${remoteWords.length}개 조회됨`);
+    showToast(`Supabase에서 단어 ${remoteWords.length}개를 조회했습니다.`);
   } catch (error) {
     const message = getAiErrorMessage(error);
     setAiStatus(message);
@@ -2316,7 +2332,7 @@ async function testGeminiApiKey() {
     showToast(message);
   } finally {
     elements.testGeminiKeyBtn.disabled = false;
-    elements.testGeminiKeyBtn.textContent = "Supabase 연결 테스트";
+    elements.testGeminiKeyBtn.textContent = "연결 테스트";
   }
 }
 
@@ -2332,7 +2348,15 @@ async function testAiConnection() {
   elements.aiConnectionStatus.textContent = "Gemini 응답을 기다리고 있습니다. 최대 1분이 걸릴 수 있습니다.";
 
   try {
-    await window.JapaneseService.testAiConnection();
+    if (typeof window.JapaneseService.testAiConnection === "function") {
+      await window.JapaneseService.testAiConnection();
+    } else if (typeof window.JapaneseService.generateSentences === "function") {
+      await window.JapaneseService.generateSentences({
+        prompt: "연결 확인입니다. 반드시 {\"sentences\":[]} JSON만 반환하세요."
+      });
+    } else {
+      throw new Error("AI 서비스 파일이 최신 버전이 아닙니다. 앱을 새로고침해 주세요.");
+    }
     elements.aiConnectionStatus.textContent = "AI 연결 성공 · Gemini 문장 생성을 사용할 수 있습니다.";
     showToast("AI 연결 테스트에 성공했습니다.");
   } catch (error) {

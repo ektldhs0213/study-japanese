@@ -313,6 +313,18 @@ label {
   grid-template-columns: repeat(2, 1fr);
 }
 
+.supabase-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.supabase-actions button {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .today-card .button-row {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }

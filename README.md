@@ -166,17 +166,19 @@ jp_history: id, japanese, action, created_at
 
 ## Gemini AI 문장 생성
 
-Gemini 키는 프런트엔드가 아니라 Supabase Edge Function secret으로
-저장합니다.
+Gemini 키는 프런트엔드가 아니라 Cloudflare Pages Function secret으로
+저장합니다. Cloudflare Pages의 `Settings > Variables and Secrets`에서
+Production과 Preview 환경에 각각 등록합니다.
 
-```bash
-supabase secrets set GEMINI_API_KEY=YOUR_KEY
-supabase secrets set GEMINI_MODEL=gemini-2.5-flash
-supabase functions deploy generate-japanese-sentences
+```text
+GEMINI_API_KEY=YOUR_KEY
 ```
 
-일본어 앱의 기존 `with AI` 기능은
-`generate-japanese-sentences` Edge Function을 호출합니다. 무료 할당량
+모델을 바꿀 때만 `GEMINI_MODEL`을 선택적으로 등록합니다. 기본값은
+`gemini-2.5-flash`입니다.
+
+일본어 앱의 기존 `with AI` 기능은 같은 도메인의
+`/api/generate-japanese-sentences` Cloudflare Pages Function을 호출합니다. 무료 할당량
 소진, 키 오류, 모델 혼잡 오류는 기존 앱의 상태 메시지에 표시됩니다.
 
 ## 데이터 접근 원칙

@@ -87,16 +87,13 @@
       return global.SupabaseClient.rest("jp_words", "?select=id&limit=1");
     },
     async generateSentences(payload) {
-      const config = global.APP_CONFIG || {};
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
       try {
-        const response = await fetch(`${String(config.SUPABASE_URL).replace(/\/+$/, "")}/functions/v1/generate-japanese-sentences`, {
+        const response = await fetch("/api/generate-japanese-sentences", {
           method: "POST",
           headers: {
-            apikey: config.SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${config.SUPABASE_ANON_KEY}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify(payload),
