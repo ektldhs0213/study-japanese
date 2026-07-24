@@ -30,7 +30,7 @@ Netlify 및 OCI 전용 구성을 제거하고 Cloudflare Pages와 Supabase를 �
 ├─ shared/                     # 프레임워크 독립 공통 유틸리티
 ├─ supabase/
 │  ├─ migrations/              # PostgreSQL schema + RLS
-│  └─ functions/               # Gemini 호출 Edge Function
+│  └─ functions/               # 기존 Supabase 함수 참고 코드
 ├─ .env.example
 └─ package.json
 ```
@@ -70,7 +70,7 @@ Boardgame Score: http://localhost:4174
 
 개발 서버는 환경변수가 없는 상태에서도 열립니다. 이 경우 기존 일본어
 PWA의 localStorage 및 오프라인 기능은 그대로 사용할 수 있지만 Supabase
-동기화와 AI Edge Function은 비활성화됩니다.
+동기화와 AI Pages Function은 비활성화됩니다.
 
 ## 빌드
 
@@ -189,7 +189,7 @@ GEMINI_API_KEY=YOUR_KEY
 UI
   -> JapaneseService / BoardgameService
   -> SupabaseClient
-  -> Supabase REST, Edge Functions
+  -> Supabase REST / Cloudflare Pages Functions
 ```
 
 `localStorage`는 일본어 PWA의 오프라인 사용과 기존 데이터 보존을 위해

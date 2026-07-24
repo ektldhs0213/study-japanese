@@ -315,14 +315,17 @@ label {
 
 .supabase-actions {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
 }
 
 .supabase-actions button {
   min-width: 0;
   min-height: 40px;
-  padding: 0 8px;
-  font-size: 13px;
+  padding: 0 5px;
+  font-size: 12px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .today-card .button-row {
@@ -684,6 +687,16 @@ label {
 }
 
 @media (max-width: 480px) {
+  .supabase-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .supabase-actions button {
+    padding-inline: 3px;
+    font-size: 10px;
+  }
+
   .app-header {
     padding: 16px;
   }

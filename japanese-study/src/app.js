@@ -2332,7 +2332,7 @@ async function testGeminiApiKey() {
     showToast(message);
   } finally {
     elements.testGeminiKeyBtn.disabled = false;
-    elements.testGeminiKeyBtn.textContent = "연결 테스트";
+    elements.testGeminiKeyBtn.textContent = "Supabase 연결 테스트";
   }
 }
 
@@ -2485,11 +2485,11 @@ function getAiErrorMessage(error) {
   }
 
   if (error.status === 400 || error.status === 401 || error.status === 403) {
-    return `Supabase Function 권한 또는 secret을 확인해 주세요. (${error.status}: ${shortenMessage(message)})`;
+    return `Cloudflare Pages의 GEMINI_API_KEY 또는 Gemini API 권한을 확인해 주세요. (${error.status}: ${shortenMessage(message)})`;
   }
 
   if (/Failed to fetch|NetworkError|Load failed/i.test(message)) {
-    return "Supabase Edge Function 연결에 실패했습니다. Pages 환경변수와 Function 배포 상태를 확인해 주세요.";
+    return "Cloudflare Pages Function 연결에 실패했습니다. GEMINI_API_KEY와 Pages 배포 상태를 확인해 주세요.";
   }
 
   if (message === "EMPTY_AI_RESULT") {

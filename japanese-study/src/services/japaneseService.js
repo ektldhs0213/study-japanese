@@ -101,7 +101,9 @@
         });
         const body = await response.json().catch(() => null);
         if (!response.ok) {
-          throw new Error(body?.error || body?.message || `AI function failed (${response.status})`);
+          const responseError = new Error(body?.error || body?.message || `AI function failed (${response.status})`);
+          responseError.status = response.status;
+          throw responseError;
         }
         return body;
       } catch (error) {
