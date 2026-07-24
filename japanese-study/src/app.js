@@ -2020,9 +2020,11 @@ function renderWordStudyFilters() {
     "hidden",
     state.wordStudyFilterMode !== "dates" || !hasHiddenDates
   );
-  elements.wordStudyToggleDatesBtn.textContent = state.wordStudyShowAllDates
-    ? "최근 5개만 보기"
-    : `나머지 날짜 ${dates.length - 5}개 보기`;
+  const dateToggleLabel = state.wordStudyShowAllDates ? "이전 날짜 접기" : "이전 날짜 펼치기";
+  elements.wordStudyToggleDatesBtn.classList.toggle("expanded", state.wordStudyShowAllDates);
+  elements.wordStudyToggleDatesBtn.setAttribute("aria-expanded", String(state.wordStudyShowAllDates));
+  elements.wordStudyToggleDatesBtn.setAttribute("aria-label", dateToggleLabel);
+  elements.wordStudyToggleDatesBtn.title = dateToggleLabel;
   elements.wordStudyRangeFields.classList.toggle("hidden", state.wordStudyFilterMode !== "range");
   elements.wordStudyStartDate.value = state.wordStudyStartDate;
   elements.wordStudyEndDate.value = state.wordStudyEndDate;

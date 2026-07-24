@@ -1,18 +1,18 @@
 :root {
   color-scheme: light;
-  --bg: #f5f5f7;
-  --surface: rgba(255, 255, 255, 0.92);
+  --bg: #f3f3f5;
+  --surface: #ffffff;
   --surface-strong: #ffffff;
   --text: #1d1d1f;
   --muted: #6e6e73;
-  --line: #d2d2d7;
+  --line: #dedee3;
   --primary: #1d1d1f;
   --primary-dark: #000000;
   --accent: #515154;
   --danger: #d70015;
   --warning: #8a5a00;
-  --soft: #e8e8ed;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+  --soft: #f0f0f2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.035);
   --jp-size: clamp(20px, 5.2vw, 28px);
   --reading-size: clamp(14px, 3.8vw, 18px);
   --meaning-size: clamp(15px, 4vw, 18px);
@@ -40,19 +40,26 @@ select {
 
 button,
 .file-button {
-  min-height: 46px;
+  min-height: 44px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--primary);
   color: #fff;
   padding: 0 16px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 button:hover,
 .file-button:hover {
   background: var(--primary-dark);
+}
+
+button:focus-visible,
+.file-button:focus-within {
+  outline: 2px solid #8e8e93;
+  outline-offset: 2px;
 }
 
 button:disabled {
@@ -67,8 +74,8 @@ textarea,
 select {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.88);
+  border-radius: 10px;
+  background: var(--surface-strong);
   color: var(--text);
   padding: 12px 14px;
   outline: none;
@@ -94,13 +101,10 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.78);
+  padding: 16px max(20px, calc((100vw - 1040px) / 2));
+  background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(18px);
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .app-header h1,
@@ -133,10 +137,10 @@ label {
 
 .app-shell {
   display: grid;
-  gap: 16px;
-  width: min(1120px, 100%);
+  gap: 12px;
+  width: min(1040px, 100%);
   margin: 0 auto;
-  padding: 16px;
+  padding: 18px 16px 28px;
 }
 
 .today-card,
@@ -145,20 +149,20 @@ label {
 .kana-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
 }
 
 .today-card {
   display: grid;
-  gap: 18px;
-  padding: 22px;
+  gap: 16px;
+  padding: 20px;
 }
 
 .panel {
   display: none;
-  gap: 18px;
-  padding: 18px;
+  gap: 16px;
+  padding: 20px;
 }
 
 .panel.active {
@@ -183,12 +187,12 @@ label {
 .count-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
+  min-height: 30px;
   border-radius: 999px;
   background: var(--soft);
   color: var(--text);
-  padding: 0 12px;
-  font-size: 13px;
+  padding: 0 10px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -234,19 +238,26 @@ label {
 .tabs {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px;
+  gap: 3px;
+  overflow: hidden;
+  padding: 3px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(232, 232, 237, 0.8);
+  border-radius: 12px;
+  background: rgba(232, 232, 235, 0.88);
+  position: sticky;
+  top: 8px;
+  z-index: 9;
+  backdrop-filter: blur(18px);
 }
 
 .tab {
-  min-width: 74px;
-  min-height: 42px;
+  min-width: 0;
+  min-height: 40px;
+  border-radius: 9px;
+  padding: 0 8px;
   background: transparent;
   color: var(--text);
+  font-size: 13px;
 }
 
 .tab:hover {
@@ -256,7 +267,7 @@ label {
 .tab.active {
   background: var(--surface-strong);
   color: var(--text);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .word-form,
@@ -272,7 +283,7 @@ label {
 }
 
 .management-section {
-  padding: 18px 0;
+  padding: 20px 0;
   border-top: 1px solid var(--line);
 }
 
@@ -291,8 +302,8 @@ label {
 #geminiKeyStatus {
   margin: 0;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-strong);
+  border-radius: 10px;
+  background: var(--soft);
   padding: 10px 12px;
   color: var(--text);
 }
@@ -329,7 +340,7 @@ label {
 }
 
 .today-card .button-row {
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .button-grid {
@@ -378,7 +389,7 @@ label {
   display: grid;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 10px;
   background: var(--surface-strong);
   padding: 14px;
 }
@@ -446,7 +457,7 @@ label {
 
 .small-button {
   min-height: 36px;
-  border-radius: 12px;
+  border-radius: 9px;
   padding: 0 10px;
   font-size: 13px;
 }
@@ -454,14 +465,14 @@ label {
 .study-card {
   display: grid;
   gap: 16px;
-  padding: 18px;
+  padding: 16px;
 }
 
 .kana-card {
   display: grid;
   place-items: center;
-  min-height: 210px;
-  padding: 22px;
+  min-height: 196px;
+  padding: 20px;
   text-align: center;
 }
 
@@ -499,13 +510,14 @@ label {
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--soft);
-  padding: 5px;
+  padding: 3px;
 }
 
 .segmented-control button {
   min-height: 40px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text);
 }
@@ -516,7 +528,7 @@ label {
 
 .segmented-control button.active {
   background: var(--surface-strong);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .filter-mode-control {
@@ -535,7 +547,7 @@ label {
   gap: 8px;
   min-height: 44px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface-strong);
   padding: 8px 10px;
   cursor: pointer;
@@ -553,7 +565,33 @@ label {
 }
 
 .date-toggle-button {
-  width: 100%;
+  display: block;
+  width: 44px;
+  min-height: 32px;
+  margin: 2px auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.date-toggle-button::before {
+  display: block;
+  content: "⌄";
+  font-size: 25px;
+  line-height: 24px;
+  transition: transform 180ms ease;
+}
+
+.date-toggle-button:hover,
+.date-toggle-button:focus-visible {
+  background: var(--soft);
+  color: var(--text);
+}
+
+.date-toggle-button.expanded::before {
+  transform: rotate(180deg);
 }
 
 .date-range-fields {
@@ -633,7 +671,7 @@ label {
   width: 100%;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--surface-strong);
   color: var(--text);
   cursor: pointer;
@@ -700,7 +738,7 @@ label {
   display: none;
   max-width: 520px;
   margin: 0 auto;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #1d1d1f;
   color: #fff;
   padding: 14px 16px;
@@ -718,11 +756,12 @@ label {
 
 @media (min-width: 760px) {
   .app-header {
-    padding: 24px 32px;
+    padding-top: 18px;
+    padding-bottom: 18px;
   }
 
   .app-shell {
-    padding: 24px;
+    padding: 22px 20px 36px;
   }
 
   .word-form {
@@ -766,32 +805,32 @@ label {
   }
 
   .app-header {
-    padding: 16px;
+    padding: 14px 16px;
   }
 
   .app-shell {
-    gap: 12px;
-    padding: 12px;
+    gap: 10px;
+    padding: 12px 10px 24px;
   }
 
   .today-card,
   .panel {
-    border-radius: 20px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 15px;
   }
 
   .study-card,
   .kana-card {
-    border-radius: 20px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 15px;
   }
 
   button,
   .file-button {
     min-height: 42px;
-    border-radius: 12px;
-    padding: 0 12px;
-    font-size: 14px;
+    border-radius: 9px;
+    padding: 0 10px;
+    font-size: 13px;
   }
 
   .kana-grid {
@@ -800,7 +839,7 @@ label {
 
   .kana-tile {
     min-height: 64px;
-    border-radius: 12px;
+    border-radius: 9px;
     padding: 6px 2px;
   }
 
@@ -818,9 +857,29 @@ label {
   }
 
   .tab {
-    min-width: 68px;
+    min-width: 0;
     min-height: 38px;
-    font-size: 13px;
+    padding: 0 3px;
+    font-size: 12px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .today-card .button-row {
+    gap: 6px;
+  }
+
+  .today-card .button-row button {
+    padding-inline: 4px;
+    font-size: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 21px;
+  }
+
+  .section-heading h2 {
+    font-size: 19px;
   }
 
   .section-heading {
