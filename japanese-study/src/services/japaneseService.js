@@ -38,10 +38,10 @@
     },
     async saveWord(word) {
       const record = {
-        japanese: word.jp || word.japanese,
+        japanese: String(word.jp || word.japanese || "").normalize("NFKC").trim(),
         reading: word.reading,
         meaning: word.meaning,
-        pos: word.pos || word.category,
+        pos: String(word.pos || word.category || "").trim().toLowerCase(),
         semantic_tags: word.semanticTags || word.semantic_tags || [],
         created_at: word.createdDate
           ? `${word.createdDate}T00:00:00.000Z`

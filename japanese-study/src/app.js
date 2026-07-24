@@ -189,24 +189,30 @@ async function loadWordsFromSupabase() {
 
   state.remoteSyncing = true;
   try {
-    const [wordRows, sentenceRows] = await Promise.all([
-      window.JapaneseService.listWords(),
-      window.JapaneseService.listSentences()
-    ]);
-    const remoteWords = wordRows
+    const wordRows = await window.JapaneseService.listWords();
+    const remoteWords = deduplicateWords(wordRows
       .map(cleanStoredWord)
-      .filter(Boolean);
-    const remoteSentences = sentenceRows
-      .map((sentence) => cleanStoredSentence({ ...sentence, category: "AI" }))
-      .filter((sentence) => sentence.jp && sentence.reading && sentence.meaning);
+      .filter(Boolean));
+    let sentenceWarning = "";
+
+    try {
+      const sentenceRows = await window.JapaneseService.listSentences();
+      state.aiSentences = sentenceRows
+        .map((sentence) => cleanStoredSentence({ ...sentence, category: "AI" }))
+        .filter((sentence) => sentence.jp && sentence.reading && sentence.meaning);
+    } catch (error) {
+      state.aiSentences = [];
+      sentenceWarning = ` · 문장 조회 실패 (${shortenMessage(error.message)})`;
+    }
 
     state.words = remoteWords;
-    state.aiSentences = remoteSentences;
     saveWords();
     saveAiSentences();
     generateSentences();
     renderAll();
-    setGeminiKeyStatus(`Supabase 조회 성공 · DB 단어 ${remoteWords.length}개 · DB 문장 ${remoteSentences.length}개`);
+    setGeminiKeyStatus(
+      `Supabase 조회 성공 · DB 단어 ${remoteWords.length}개 · DB 문장 ${state.aiSentences.length}개${sentenceWarning}`
+    );
     return true;
   } catch (error) {
     state.words = state.words.filter((word) => word.syncStatus === "synced");
@@ -536,7 +542,7 @@ async function addWord(rawWord) {
 function normalizeWord(rawWord) {
   const baseWord = normalizeDictionaryForm(normalizeWordFields({
     ...rawWord,
-    jp: cleanInputPart(rawWord.jp),
+    jp: normalizeJapaneseText(rawWord.jp),
     reading: normalizeKoreanReading(cleanInputPart(rawWord.reading)),
     meaning: normalizeMeaningText(cleanInputPart(rawWord.meaning)),
     legacyCategory: cleanInputPart(rawWord.legacyCategory || rawWord.category)
@@ -965,12 +971,42 @@ function upsertWord(word, addIndex) {
 }
 
 function isSameWord(first, second) {
-  return normalizeKey(first.jp) === normalizeKey(second.jp)
+  return normalizeJapaneseKey(first.jp) === normalizeJapaneseKey(second.jp)
     && normalizeKey(first.pos) === normalizeKey(second.pos);
 }
 
 function normalizeKey(value) {
   return String(value || "").trim().replace(/\s+/g, "").toLowerCase();
+}
+
+function normalizeJapaneseText(value) {
+  return cleanInputPart(String(value || "").normalize("NFKC"));
+}
+
+function normalizeJapaneseKey(value) {
+  return normalizeKey(normalizeJapaneseText(value));
+}
+
+function deduplicateWords(words) {
+  const merged = new Map();
+
+  words.forEach((word) => {
+    const key = `${normalizeJapaneseKey(word.jp)}::${normalizeKey(word.pos)}`;
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, { ...word });
+      return;
+    }
+
+    existing.meaning = mergeCommaValues(existing.meaning, word.meaning);
+    existing.semanticTags = normalizeTags([
+      ...normalizeTags(existing.semanticTags),
+      ...normalizeTags(word.semanticTags)
+    ]);
+    existing.translation = normalizeTranslation(null, existing);
+  });
+
+  return [...merged.values()];
 }
 
 function mergeCommaValues(first, second) {
