@@ -23,6 +23,7 @@ const state = {
   wordStudyShowAnswer: false,
   wordStudyFilterMode: "all",
   wordStudySelectedDates: [],
+  wordStudyShowAllDates: false,
   wordStudyStartDate: "",
   wordStudyEndDate: "",
   todayRevealed: false,
@@ -59,6 +60,7 @@ const elements = {
   wordStudyDatesFilterBtn: $("#wordStudyDatesFilterBtn"),
   wordStudyRangeFilterBtn: $("#wordStudyRangeFilterBtn"),
   wordStudyDateOptions: $("#wordStudyDateOptions"),
+  wordStudyToggleDatesBtn: $("#wordStudyToggleDatesBtn"),
   wordStudyRangeFields: $("#wordStudyRangeFields"),
   wordStudyStartDate: $("#wordStudyStartDate"),
   wordStudyEndDate: $("#wordStudyEndDate"),
@@ -363,6 +365,7 @@ function bindEvents() {
   elements.wordStudyDatesFilterBtn.addEventListener("click", () => setWordStudyFilterMode("dates"));
   elements.wordStudyRangeFilterBtn.addEventListener("click", () => setWordStudyFilterMode("range"));
   elements.wordStudyDateOptions.addEventListener("change", updateWordStudySelectedDates);
+  elements.wordStudyToggleDatesBtn.addEventListener("click", toggleWordStudyDateList);
   elements.wordStudyStartDate.addEventListener("change", updateWordStudyDateRange);
   elements.wordStudyEndDate.addEventListener("change", updateWordStudyDateRange);
   elements.hiraganaModeBtn.addEventListener("click", () => setKanaMode("hiragana"));
@@ -1992,10 +1995,11 @@ function getWordStudyWords() {
 
 function renderWordStudyFilters() {
   const dates = [...new Set(state.words.map(getWordStudyDate).filter(Boolean))].sort().reverse();
+  const visibleDates = state.wordStudyShowAllDates ? dates : dates.slice(0, 5);
   state.wordStudySelectedDates = state.wordStudySelectedDates.filter((date) => dates.includes(date));
 
   elements.wordStudyDateOptions.innerHTML = dates.length
-    ? dates.map((date) => {
+    ? visibleDates.map((date) => {
         const count = state.words.filter((word) => getWordStudyDate(word) === date).length;
         const checked = state.wordStudySelectedDates.includes(date) ? " checked" : "";
         return `
@@ -2011,6 +2015,14 @@ function renderWordStudyFilters() {
   elements.wordStudyDatesFilterBtn.classList.toggle("active", state.wordStudyFilterMode === "dates");
   elements.wordStudyRangeFilterBtn.classList.toggle("active", state.wordStudyFilterMode === "range");
   elements.wordStudyDateOptions.classList.toggle("hidden", state.wordStudyFilterMode !== "dates");
+  const hasHiddenDates = dates.length > 5;
+  elements.wordStudyToggleDatesBtn.classList.toggle(
+    "hidden",
+    state.wordStudyFilterMode !== "dates" || !hasHiddenDates
+  );
+  elements.wordStudyToggleDatesBtn.textContent = state.wordStudyShowAllDates
+    ? "최근 5개만 보기"
+    : `나머지 날짜 ${dates.length - 5}개 보기`;
   elements.wordStudyRangeFields.classList.toggle("hidden", state.wordStudyFilterMode !== "range");
   elements.wordStudyStartDate.value = state.wordStudyStartDate;
   elements.wordStudyEndDate.value = state.wordStudyEndDate;
@@ -2025,6 +2037,11 @@ function renderWordStudyFilters() {
   } else {
     elements.wordStudyFilterSummary.textContent = `전체 단어 ${state.words.length}개`;
   }
+}
+
+function toggleWordStudyDateList() {
+  state.wordStudyShowAllDates = !state.wordStudyShowAllDates;
+  renderWordStudyFilters();
 }
 
 function setWordStudyFilterMode(mode) {
@@ -2068,6 +2085,7 @@ function updateWordStudyDateRange() {
 function resetWordStudyFilters() {
   state.wordStudyFilterMode = "all";
   state.wordStudySelectedDates = [];
+  state.wordStudyShowAllDates = false;
   state.wordStudyStartDate = "";
   state.wordStudyEndDate = "";
 }
@@ -2481,7 +2499,7 @@ async function testAiConnection() {
 
   elements.testAiConnectionBtn.disabled = true;
   elements.testAiConnectionBtn.textContent = "AI 연결 확인 중...";
-  elements.aiConnectionStatus.textContent = "Gemini 응답을 기다리고 있습니다. 최대 1분이 걸릴 수 있습니다.";
+  elements.aiConnectionStatus.textContent = "Gemini 응답을 기다리고 있습니다. 최대 5분이 걸릴 수 있습니다.";
 
   try {
     if (typeof window.JapaneseService.testAiConnection === "function") {
@@ -2611,8 +2629,8 @@ function normalizeAiSentences(sentences) {
 
 function getAiErrorMessage(error) {
   const message = String(error.message || "");
-  if (error.code === "AI_TIMEOUT" || /1분을 초과|timed? ?out|timeout/i.test(message)) {
-    return "AI 응답이 1분 안에 오지 않아 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.";
+  if (error.code === "AI_TIMEOUT" || /5분을 초과|timed? ?out|timeout/i.test(message)) {
+    return "AI 응답이 5분 안에 오지 않아 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.";
   }
 
   const quotaLike = error.status === 429 || /quota|rate|limit|exhausted|credit/i.test(message);

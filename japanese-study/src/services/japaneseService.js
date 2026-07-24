@@ -1,6 +1,6 @@
 (function createJapaneseService(global) {
   const jsonHeaders = { Prefer: "return=representation" };
-  const AI_TIMEOUT_MS = 60_000;
+  const AI_TIMEOUT_MS = 5 * 60_000;
 
   function encode(value) {
     return encodeURIComponent(value);
@@ -130,7 +130,7 @@
         return body;
       } catch (error) {
         if (error.name === "AbortError") {
-          const timeoutError = new Error("AI 요청이 1분을 초과하여 중단되었습니다.");
+          const timeoutError = new Error("AI 요청이 5분을 초과하여 중단되었습니다.");
           timeoutError.code = "AI_TIMEOUT";
           throw timeoutError;
         }

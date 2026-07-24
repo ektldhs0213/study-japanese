@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>일본어 문장 카드</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="style.css?v=202607250103" />
+    <link rel="stylesheet" href="style.css?v=202607250115" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">개인 일본어 학습 PWA</p>
         <h1>일본어 문장 카드</h1>
-        <p class="source-date">소스날짜 : 07월25일 01시 03분</p>
+        <p class="source-date">소스날짜 : 07월25일 01시 15분</p>
       </div>
       <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
     </header>
@@ -88,6 +88,9 @@
           </div>
 
           <div id="wordStudyDateOptions" class="date-filter-options hidden"></div>
+          <button id="wordStudyToggleDatesBtn" class="ghost-button date-toggle-button hidden" type="button">
+            나머지 날짜 보기
+          </button>
 
           <div id="wordStudyRangeFields" class="date-range-fields hidden">
             <label>
@@ -262,7 +265,7 @@
             <p class="eyebrow">AI 연결 확인</p>
             <h3>Gemini 문장 생성</h3>
           </div>
-          <p class="helper-text">Gemini 키는 Cloudflare Pages의 GEMINI_API_KEY Secret으로 관리하며, 요청 제한 시간은 1분입니다.</p>
+          <p class="helper-text">Gemini 키는 Cloudflare Pages의 GEMINI_API_KEY Secret으로 관리하며, 요청 제한 시간은 5분입니다.</p>
           <button id="testAiConnectionBtn" type="button">AI 연결 테스트</button>
           <p id="aiConnectionStatus" class="connection-status">아직 테스트하지 않았습니다.</p>
         </div>
@@ -288,8 +291,8 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="config.js"></script>
-    <script src="lib/supabase.js?v=202607250103"></script>
-    <script src="services/japaneseService.js?v=202607250103"></script>
-    <script src="app.js?v=202607250103"></script>
+    <script src="lib/supabase.js?v=202607250115"></script>
+    <script src="services/japaneseService.js?v=202607250115"></script>
+    <script src="app.js?v=202607250115"></script>
   </body>
 </html>
