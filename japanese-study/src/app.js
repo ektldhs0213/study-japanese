@@ -3,6 +3,9 @@ const MARKS_KEY = "japaneseSentencePwaMarks";
 const AI_SENTENCES_KEY = "japaneseSentencePwaAiSentences";
 const GENERATION_OPTIONS_KEY = "japaneseSentencePwaGenerationOptions";
 const APP_CONFIG = window.APP_CONFIG || {};
+const AI_BATCH_SIZE = 10;
+const AI_TARGET_COUNT = 100;
+const AI_CONTEXT_LIMIT = 100;
 
 const state = {
   words: [],
@@ -2370,41 +2373,95 @@ async function generateSentencesWithAi(options = {}) {
     return;
   }
 
-  setAiStatus(options.focusToday ? "AI로 오늘의 문장을 만들고 있습니다..." : "AI로 문장을 만들고 있습니다...");
-  setAiLoading(true, options.focusToday ? "AI 생성 중..." : "생성 중...");
+  setAiStatus("AI 문장을 10개씩 생성하고 중복을 검수합니다.");
+  setAiLoading(true, "0 / 100개 생성 중...");
+
+  const generatedThisRun = [];
+  let comparisonSentences = state.sentences.slice(0, AI_CONTEXT_LIMIT);
 
   try {
-    const aiSentences = await requestBackendAiSentences();
-    if (aiSentences.length === 0) {
-      throw new Error("EMPTY_AI_RESULT");
+    const totalBatches = Math.ceil(AI_TARGET_COUNT / AI_BATCH_SIZE);
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex += 1) {
+      const requestedCount = Math.min(AI_BATCH_SIZE, AI_TARGET_COUNT - generatedThisRun.length);
+      if (requestedCount <= 0) break;
+
+      setAiStatus(
+        `${batchIndex + 1} / ${totalBatches} 묶음 생성 중 · ${generatedThisRun.length}개 저장 완료`
+      );
+      setAiLoading(true, `${generatedThisRun.length} / ${AI_TARGET_COUNT}개 생성 중...`);
+
+      const candidates = await requestBackendAiSentences({
+        currentSentences: comparisonSentences,
+        batchSize: requestedCount
+      });
+      if (candidates.length === 0) continue;
+
+      setAiStatus(
+        `${batchIndex + 1} / ${totalBatches} 묶음 중복 검수 중 · 기존 문장 ${comparisonSentences.length}개 비교`
+      );
+      const reviewed = await requestBackendAiSentences({
+        currentSentences: comparisonSentences,
+        prompt: buildGeminiDuplicateCheckPrompt(candidates, comparisonSentences)
+      });
+      const existingJapanese = new Set(comparisonSentences.map((sentence) => cleanInputPart(sentence.jp)));
+      const uniqueBatch = uniqueSentences(reviewed)
+        .filter((sentence) => !existingJapanese.has(cleanInputPart(sentence.jp)))
+        .slice(0, requestedCount);
+
+      if (uniqueBatch.length === 0) continue;
+
+      const saveResults = await Promise.allSettled(
+        uniqueBatch.map((sentence) => window.JapaneseService.saveSentence(sentence))
+      );
+      const savedBatch = uniqueBatch.filter((sentence, index) => saveResults[index].status === "fulfilled");
+      generatedThisRun.push(...savedBatch);
+      state.aiSentences = uniqueSentences([...savedBatch, ...state.aiSentences]);
+      comparisonSentences = uniqueSentences([...savedBatch, ...comparisonSentences])
+        .slice(0, AI_CONTEXT_LIMIT);
+
+      saveAiSentences();
+      generateSentences();
+      renderAll();
+      setAiStatus(
+        `${batchIndex + 1} / ${totalBatches} 묶음 저장 완료 · ${generatedThisRun.length}개 저장`
+      );
     }
 
-    state.aiSentences = aiSentences;
-    await Promise.all(state.aiSentences.map((sentence) => window.JapaneseService.saveSentence(sentence)));
-    saveAiSentences();
-    generateSentences();
+    if (generatedThisRun.length === 0) throw new Error("EMPTY_AI_RESULT");
+
     state.currentIndex = 0;
     state.todayIndex = 0;
     state.todayRevealed = false;
     renderAll();
-    setAiStatus(`AI 검수 문장 ${state.aiSentences.length}개 반영. 총 ${state.sentences.length}개 문장입니다.`);
+    setAiStatus(
+      `AI 문장 ${generatedThisRun.length}개 생성·중복 검수·저장 완료. 총 ${state.sentences.length}개 문장입니다.`
+    );
     if (options.focusToday) showRandomTodayFromSentenceList("AI 검수 후 목록에서 랜덤 문장으로 바꿨습니다.");
-    showToast(`AI 검수 문장 ${state.aiSentences.length}개를 반영했습니다.`);
+    showToast(`AI 문장 ${generatedThisRun.length}개를 저장했습니다.`);
   } catch (error) {
     const message = getAiErrorMessage(error);
-    setAiStatus(message);
-    showToast(message);
+    const partialMessage = generatedThisRun.length
+      ? `${generatedThisRun.length}개까지 저장했습니다. ${message}`
+      : message;
+    setAiStatus(partialMessage);
+    showToast(partialMessage);
   } finally {
     setAiLoading(false);
   }
 }
 
-async function requestBackendAiSentences() {
+async function requestBackendAiSentences(options = {}) {
+  const currentSentences = (options.currentSentences || state.sentences)
+    .slice(0, AI_CONTEXT_LIMIT);
   const data = await window.JapaneseService.generateSentences({
     words: state.words,
-    sentences: state.sentences.slice(0, 120),
+    sentences: currentSentences,
     generationOptions: state.generationOptions,
-    prompt: buildGeminiPrompt()
+    prompt: options.prompt || buildGeminiPrompt({
+      currentSentences,
+      batchSize: options.batchSize || AI_BATCH_SIZE
+    })
   });
   return normalizeAiSentences(data.sentences || []);
 }
@@ -2470,7 +2527,11 @@ async function testAiConnection() {
   }
 }
 
-function buildGeminiPrompt() {
+function buildGeminiPrompt(options = {}) {
+  const batchSize = Math.min(
+    AI_BATCH_SIZE,
+    Math.max(1, Number(options.batchSize) || AI_BATCH_SIZE)
+  );
   const words = state.words.map((word) => ({
     japanese: word.jp,
     readingKorean: word.reading,
@@ -2482,7 +2543,9 @@ function buildGeminiPrompt() {
     generation: word.generation,
     legacyCategory: word.legacyCategory
   }));
-  const currentSentences = state.sentences.slice(0, 120).map((sentence, index) => ({
+  const currentSentences = (options.currentSentences || state.sentences)
+    .slice(0, AI_CONTEXT_LIMIT)
+    .map((sentence, index) => ({
     no: index + 1,
     jp: sentence.jp,
     reading: sentence.reading,
@@ -2512,7 +2575,7 @@ function buildGeminiPrompt() {
     "문장을 만들 때는 먼저 문장 템플릿을 정하고, 각 슬롯에 필요한 pos/semanticTags/grammar 조건에 맞는 단어만 사용해라.",
     "의미가 어색한 문장, 한국어 뜻이 부자연스러운 문장, 일본어가 초급 학습용으로 어색한 문장은 자연스럽게 고쳐라.",
     "괜찮은 문장은 비슷한 난이도의 더 자연스러운 표현으로 유지하거나 개선해라.",
-    "현재 문장이 부족하면 등록 단어 기반으로 새 문장을 추가해라.",
+    `등록 단어를 기반으로 기존 문장과 겹치지 않는 새 문장을 정확히 ${batchSize}개 만들어라.`,
     "particle, auxiliary, conjunction, interjection, prefix, suffix, fixed_expression, sentence_pattern은 무작위 조합 대상으로 쓰지 마라.",
     "단, けど/から/まで 같은 particle/conjunction은 pos와 semanticTags가 맞는 문장 템플릿 안에서만 문법 요소로 사용해라.",
     "fixed_expression은 다른 단어와 억지로 조합하지 말고 저장된 표현 그대로만 사용해라.",
@@ -2532,9 +2595,48 @@ function buildGeminiPrompt() {
     "나쁜 예: JP가 です체인데 KR이 반말인 문장, JP가 보통체인데 KR이 존댓말인 문장.",
     "JSON만 출력해라. 마크다운 금지.",
     "형식: {\"sentences\":[{\"jp\":\"...\",\"reading\":\"...\",\"meaning\":\"...\",\"literalMeaning\":\"...\",\"naturalMeaning\":\"...\",\"style\":{\"jpStyle\":\"polite|plain\",\"krStyle\":\"polite|plain\",\"translationMode\":\"literal|natural\"}}]}",
-    "최대 100개.",
+    `이번 응답은 최대 ${batchSize}개이며, 가능하면 정확히 ${batchSize}개를 반환해라.`,
     `등록 단어: ${JSON.stringify(words)}`,
     `현재 문장 목록: ${JSON.stringify(currentSentences)}`
+  ].join("\n");
+}
+
+function buildGeminiDuplicateCheckPrompt(candidates, currentSentences) {
+  const registeredWords = state.words.map((word) => ({
+    japanese: word.jp,
+    meaningKorean: word.meaning,
+    pos: word.pos,
+    semanticTags: word.semanticTags
+  }));
+  const existing = currentSentences.slice(0, AI_CONTEXT_LIMIT).map((sentence, index) => ({
+    no: index + 1,
+    jp: sentence.jp,
+    reading: sentence.reading,
+    meaning: sentence.meaning
+  }));
+  const candidateRows = candidates.slice(0, AI_BATCH_SIZE).map((sentence, index) => ({
+    no: index + 1,
+    jp: sentence.jp,
+    reading: sentence.reading,
+    meaning: sentence.meaning,
+    literalMeaning: sentence.literalMeaning,
+    naturalMeaning: sentence.naturalMeaning,
+    style: sentence.style
+  }));
+
+  return [
+    "너는 일본어 초보 학습 문장의 최종 중복 검수자다.",
+    "후보 문장을 기존 저장 문장과 비교해 일본어 표현이나 핵심 의미가 같거나 매우 비슷한 문장을 제거해라.",
+    "단어만 조금 바뀌었지만 문장 구조와 학습 의미가 사실상 같은 경우도 중복으로 판단해라.",
+    "중복 후보가 있으면 등록 단어 범위를 벗어나지 않는 새로운 자연스러운 문장으로 교체해라.",
+    "일본어 문법, 한국어 발음, 한국어 뜻, 문체와 번역 방식도 다시 검수해라.",
+    `최종 결과는 최대 ${AI_BATCH_SIZE}개이며, 가능하면 후보 수와 같은 개수로 반환해라.`,
+    "JSON만 출력하고 마크다운은 사용하지 마라.",
+    "형식: {\"sentences\":[{\"jp\":\"...\",\"reading\":\"...\",\"meaning\":\"...\",\"literalMeaning\":\"...\",\"naturalMeaning\":\"...\",\"style\":{\"jpStyle\":\"polite|plain\",\"krStyle\":\"polite|plain\",\"translationMode\":\"literal|natural\"}}]}",
+    `현재 생성 옵션: ${JSON.stringify(state.generationOptions)}`,
+    `등록 단어: ${JSON.stringify(registeredWords)}`,
+    `기존 저장 문장(최대 ${AI_CONTEXT_LIMIT}개): ${JSON.stringify(existing)}`,
+    `저장 전 후보 문장: ${JSON.stringify(candidateRows)}`
   ].join("\n");
 }
 
