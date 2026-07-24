@@ -344,6 +344,10 @@ label {
   text-overflow: ellipsis;
 }
 
+.supabase-actions #clearBtn {
+  grid-column: 1 / -1;
+}
+
 #managePanel button,
 #managePanel .file-button {
   border: 1px solid var(--line);
@@ -903,7 +907,11 @@ label {
   }
 
   .supabase-actions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .supabase-actions #clearBtn {
+    grid-column: auto;
   }
 
   .manage-actions {

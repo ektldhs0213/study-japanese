@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>일본어 문장 카드</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="style.css?v=202607250202" />
+    <link rel="stylesheet" href="style.css?v=202607250208" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">개인 일본어 학습 PWA</p>
         <h1>일본어 문장 카드</h1>
-        <p class="source-date">소스날짜 : 07월25일 02시 02분</p>
+        <p class="source-date">소스날짜 : 07월25일 02시 08분</p>
       </div>
       <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
     </header>
@@ -230,23 +230,17 @@
 
         <div class="management-section api-key-box">
           <div>
-            <h3>데이터베이스 확인</h3>
+            <h3>프로젝트 연결 확인</h3>
           </div>
           <input id="geminiApiKeyInput" type="text" aria-label="Supabase 프로젝트 주소" placeholder="Cloudflare 빌드 환경변수에서 설정" autocomplete="off" readonly />
           <div class="button-row supabase-actions">
-            <button id="testGeminiKeyBtn" class="ghost-button" type="button">데이터베이스 연결 확인</button>
-            <button id="clearGeminiKeyBtn" class="ghost-button" type="button">상태 새로고침</button>
-            <button id="saveGeminiKeyBtn" class="ghost-button" type="button">설정 확인</button>
+            <button id="testAiConnectionBtn" class="ghost-button" type="button">AI 연결 확인</button>
+            <button id="clearGeminiKeyBtn" class="ghost-button" type="button">새로고침</button>
+            <button id="testGeminiKeyBtn" class="ghost-button" type="button">DB 연결 확인</button>
+            <button id="saveGeminiKeyBtn" class="ghost-button" type="button">DB 설정 확인</button>
             <button id="clearBtn" class="ghost-button" type="button">기기 캐시 초기화</button>
           </div>
           <p id="geminiKeyStatus" class="connection-status hidden"></p>
-        </div>
-
-        <div class="management-section">
-          <div>
-            <h3>AI 연결 확인</h3>
-          </div>
-          <button id="testAiConnectionBtn" type="button">AI 연결 테스트</button>
           <p id="aiConnectionStatus" class="connection-status hidden"></p>
         </div>
 
@@ -269,8 +263,8 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="config.js"></script>
-    <script src="lib/supabase.js?v=202607250202"></script>
-    <script src="services/japaneseService.js?v=202607250202"></script>
-    <script src="app.js?v=202607250202"></script>
+    <script src="lib/supabase.js?v=202607250208"></script>
+    <script src="services/japaneseService.js?v=202607250208"></script>
+    <script src="app.js?v=202607250208"></script>
   </body>
 </html>

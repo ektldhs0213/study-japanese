@@ -2425,7 +2425,7 @@ async function testGeminiApiKey() {
     showToast(message);
   } finally {
     elements.testGeminiKeyBtn.disabled = false;
-    elements.testGeminiKeyBtn.textContent = "데이터베이스 연결 확인";
+    elements.testGeminiKeyBtn.textContent = "DB 연결 확인";
   }
 }
 
@@ -2458,7 +2458,7 @@ async function testAiConnection() {
     showToast(message);
   } finally {
     elements.testAiConnectionBtn.disabled = false;
-    elements.testAiConnectionBtn.textContent = "AI 연결 테스트";
+    elements.testAiConnectionBtn.textContent = "AI 연결 확인";
   }
 }
 
@@ -2702,7 +2702,7 @@ function saveGeminiApiKey() {
   setGeminiKeyStatus(getSupabaseStatusMessage());
   elements.saveGeminiKeyBtn.textContent = "확인됨";
   setTimeout(() => {
-    elements.saveGeminiKeyBtn.textContent = "설정 확인";
+    elements.saveGeminiKeyBtn.textContent = "DB 설정 확인";
   }, 1800);
   showToast(getSupabaseStatusMessage());
 }
