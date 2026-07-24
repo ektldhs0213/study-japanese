@@ -903,6 +903,10 @@ label {
 }
 
 @media (min-width: 760px) {
+  #kanaPanel .kana-card {
+    height: 250px;
+  }
+
   .panel button,
   .panel .file-button,
   #managePanel button,
