@@ -29,8 +29,8 @@ const state = {
   todayRevealed: false,
   currentIndex: 0,
   todayIndex: 0,
-  showMeaning: true,
-  showReading: true,
+  showMeaning: false,
+  showReading: false,
   deferredInstallPrompt: null,
   remoteSyncing: false,
   wordSaving: false
@@ -92,8 +92,6 @@ const elements = {
   changeTodayBtn: $("#changeTodayBtn"),
   cardSentence: $("#cardSentence"),
   cardPosition: $("#cardPosition"),
-  favoriteBtn: $("#favoriteBtn"),
-  hardBtn: $("#hardBtn"),
   prevBtn: $("#prevBtn"),
   nextBtn: $("#nextBtn"),
   randomBtn: $("#randomBtn"),
@@ -102,16 +100,14 @@ const elements = {
   speakCardBtn: $("#speakCardBtn"),
   rateInput: $("#rateInput"),
   rateValue: $("#rateValue"),
+  toggleSentenceOptionsBtn: $("#toggleSentenceOptionsBtn"),
+  sentenceStyleOptions: $("#sentenceStyleOptions"),
   jpStyleSelect: $("#jpStyleSelect"),
   krStyleSelect: $("#krStyleSelect"),
   translationModeSelect: $("#translationModeSelect"),
-  searchInput: $("#searchInput"),
   generateAiBtn: $("#generateAiBtn"),
   aiStatus: $("#aiStatus"),
   sentenceCount: $("#sentenceCount"),
-  copyAllBtn: $("#copyAllBtn"),
-  shuffleListBtn: $("#shuffleListBtn"),
-  favoritesOnlyInput: $("#favoritesOnlyInput"),
   sentenceList: $("#sentenceList"),
   exportBtn: $("#exportBtn"),
   importInput: $("#importInput"),
@@ -383,17 +379,12 @@ function bindEvents() {
   elements.speakCardBtn.addEventListener("click", () => speakSentence(getCurrentSentence()));
   elements.toggleMeaningBtn.addEventListener("click", toggleMeaning);
   elements.toggleReadingBtn.addEventListener("click", toggleReading);
-  elements.favoriteBtn.addEventListener("click", () => toggleMark("favorite"));
-  elements.hardBtn.addEventListener("click", () => toggleMark("hard"));
   elements.rateInput.addEventListener("input", updateRateLabel);
+  elements.toggleSentenceOptionsBtn.addEventListener("click", toggleSentenceOptions);
   elements.jpStyleSelect.addEventListener("change", updateGenerationOptions);
   elements.krStyleSelect.addEventListener("change", updateGenerationOptions);
   elements.translationModeSelect.addEventListener("change", updateGenerationOptions);
-  elements.searchInput.addEventListener("input", renderSentenceList);
   elements.generateAiBtn.addEventListener("click", generateSentencesWithAi);
-  elements.favoritesOnlyInput.addEventListener("change", renderSentenceList);
-  elements.copyAllBtn.addEventListener("click", copyAllSentences);
-  elements.shuffleListBtn.addEventListener("click", shuffleVisibleSentences);
   elements.exportBtn.addEventListener("click", exportJson);
   elements.importInput.addEventListener("change", importJson);
   elements.clearBtn.addEventListener("click", resetLocalCache);
@@ -2106,7 +2097,6 @@ function renderCard() {
   const sentence = getCurrentSentence();
   elements.cardSentence.innerHTML = renderSentenceHtml(sentence, state.showReading, state.showMeaning);
   elements.cardPosition.textContent = `${state.sentences.length ? state.currentIndex + 1 : 0} / ${state.sentences.length}`;
-  renderMarkButtons(sentence);
 }
 
 function renderSentenceHtml(sentence, showReading, showMeaning) {
@@ -2125,24 +2115,9 @@ function renderSentenceHtml(sentence, showReading, showMeaning) {
   `;
 }
 
-function renderMarkButtons(sentence) {
-  const marks = sentence ? getMarks(sentence.id) : {};
-  elements.favoriteBtn.classList.toggle("active", Boolean(marks.favorite));
-  elements.hardBtn.classList.toggle("active", Boolean(marks.hard));
-  elements.favoriteBtn.textContent = marks.favorite ? "즐겨찾기 해제" : "즐겨찾기";
-  elements.hardBtn.textContent = marks.hard ? "어려움 해제" : "어려움";
-}
-
 function renderSentenceList() {
-  const query = elements.searchInput.value.trim().toLowerCase();
-  const favoritesOnly = elements.favoritesOnlyInput.checked;
   elements.sentenceCount.textContent = `${state.sentences.length}개`;
-
-  const filtered = state.visibleSentences.filter((sentence) => {
-    const marks = getMarks(sentence.id);
-    const searchable = `${sentence.jp} ${sentence.reading} ${sentence.meaning} ${sentence.literalMeaning || ""} ${sentence.naturalMeaning || ""}`.toLowerCase();
-    return searchable.includes(query) && (!favoritesOnly || marks.favorite);
-  });
+  const filtered = state.visibleSentences;
 
   if (filtered.length === 0) {
     elements.sentenceList.innerHTML = `<div class="sentence-item">표시할 문장이 없습니다.</div>`;
@@ -2150,7 +2125,6 @@ function renderSentenceList() {
   }
 
   elements.sentenceList.innerHTML = filtered.map((sentence, index) => {
-    const marks = getMarks(sentence.id);
     const globalIndex = state.sentences.findIndex((item) => item.id === sentence.id) + 1;
     return `
       <article class="sentence-item">
@@ -2167,7 +2141,6 @@ function renderSentenceList() {
           </div>
         </div>
         <div class="sentence-actions">
-          <span class="sentence-meta">${marks.favorite ? "즐겨찾기 " : ""}${marks.hard ? "어려움" : ""}</span>
           <button class="small-button" type="button" data-speak="${sentence.id}">듣기</button>
         </div>
       </article>
@@ -2312,21 +2285,6 @@ function toggleReading() {
   renderCard();
 }
 
-function toggleMark(type) {
-  const sentence = getCurrentSentence();
-  if (!sentence) return;
-  const marks = getMarks(sentence.id);
-  marks[type] = !marks[type];
-  state.marks[sentence.id] = marks;
-  saveMarks();
-  renderCard();
-  renderSentenceList();
-}
-
-function getMarks(sentenceId) {
-  return state.marks[sentenceId] || { favorite: false, hard: false };
-}
-
 function speakText(text) {
   if (!text) {
     showToast("읽을 내용이 없습니다.");
@@ -2357,6 +2315,17 @@ function updateRateLabel() {
   elements.rateValue.textContent = `${elements.rateInput.value}x`;
 }
 
+function toggleSentenceOptions() {
+  const isExpanded = elements.toggleSentenceOptionsBtn.getAttribute("aria-expanded") === "true";
+  const nextExpanded = !isExpanded;
+  elements.sentenceStyleOptions.classList.toggle("hidden", !nextExpanded);
+  elements.toggleSentenceOptionsBtn.classList.toggle("expanded", nextExpanded);
+  elements.toggleSentenceOptionsBtn.setAttribute("aria-expanded", String(nextExpanded));
+  const label = nextExpanded ? "문장 설정 접기" : "문장 설정 펼치기";
+  elements.toggleSentenceOptionsBtn.setAttribute("aria-label", label);
+  elements.toggleSentenceOptionsBtn.title = label;
+}
+
 function updateGenerationOptions() {
   state.generationOptions = {
     jpStyle: elements.jpStyleSelect.value,
@@ -2378,26 +2347,6 @@ function syncGenerationOptionInputs() {
   elements.jpStyleSelect.value = state.generationOptions.jpStyle;
   elements.krStyleSelect.value = state.generationOptions.krStyle;
   elements.translationModeSelect.value = state.generationOptions.translationMode;
-}
-
-function copyAllSentences() {
-  const text = state.sentences.map((sentence) => `${sentence.jp}\n${sentence.reading}\n${sentence.meaning}`).join("\n\n");
-  if (!text) {
-    showToast("복사할 문장이 없습니다.");
-    return;
-  }
-
-  navigator.clipboard.writeText(text).then(() => {
-    showToast("전체 문장을 복사했습니다.");
-  }).catch(() => {
-    elements.exportOutput.value = text;
-    showToast("클립보드 대신 관리 탭에 표시했습니다.");
-  });
-}
-
-function shuffleVisibleSentences() {
-  state.visibleSentences = [...state.sentences].sort(() => Math.random() - 0.5);
-  renderSentenceList();
 }
 
 async function generateSentencesWithAi(options = {}) {
@@ -2482,14 +2431,14 @@ async function testGeminiApiKey() {
 
 async function testAiConnection() {
   if (!window.JapaneseService?.isRemoteReady()) {
-    elements.aiConnectionStatus.textContent = "Supabase 환경변수를 먼저 설정해 주세요.";
+    setAiConnectionStatus("Supabase 환경변수를 먼저 설정해 주세요.");
     showToast("Supabase 연결 설정이 필요합니다.");
     return;
   }
 
   elements.testAiConnectionBtn.disabled = true;
   elements.testAiConnectionBtn.textContent = "AI 연결 확인 중...";
-  elements.aiConnectionStatus.textContent = "Gemini 응답을 기다리고 있습니다. 최대 5분이 걸릴 수 있습니다.";
+  setAiConnectionStatus();
 
   try {
     if (typeof window.JapaneseService.testAiConnection === "function") {
@@ -2501,11 +2450,11 @@ async function testAiConnection() {
     } else {
       throw new Error("AI 서비스 파일이 최신 버전이 아닙니다. 앱을 새로고침해 주세요.");
     }
-    elements.aiConnectionStatus.textContent = "AI 연결 성공 · Gemini 문장 생성을 사용할 수 있습니다.";
+    setAiConnectionStatus();
     showToast("AI 연결 테스트에 성공했습니다.");
   } catch (error) {
     const message = getAiErrorMessage(error);
-    elements.aiConnectionStatus.textContent = message;
+    setAiConnectionStatus(message);
     showToast(message);
   } finally {
     elements.testAiConnectionBtn.disabled = false;
@@ -2652,12 +2601,19 @@ function setAiStatus(message) {
 }
 
 function setGeminiKeyStatus(message) {
-  elements.geminiKeyStatus.textContent = message;
+  const isError = /실패|오류|미설정|설정되지|입력해|확인해|필요|없(?:는|습니다)/.test(message);
+  elements.geminiKeyStatus.textContent = isError ? message : "";
+  elements.geminiKeyStatus.classList.toggle("hidden", !isError);
+}
+
+function setAiConnectionStatus(message = "") {
+  elements.aiConnectionStatus.textContent = message;
+  elements.aiConnectionStatus.classList.toggle("hidden", !message);
 }
 
 function setAiLoading(isLoading, label = "생성 중...") {
   elements.generateAiBtn.disabled = isLoading;
-  elements.generateAiBtn.textContent = isLoading ? label : "with AI";
+  elements.generateAiBtn.textContent = isLoading ? label : "문장 생성 (with AI)";
 }
 
 function exportJson() {
