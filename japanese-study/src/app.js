@@ -2425,7 +2425,7 @@ async function testGeminiApiKey() {
     showToast(message);
   } finally {
     elements.testGeminiKeyBtn.disabled = false;
-    elements.testGeminiKeyBtn.textContent = "Supabase 연결 테스트";
+    elements.testGeminiKeyBtn.textContent = "데이터베이스 연결 확인";
   }
 }
 

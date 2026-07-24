@@ -330,7 +330,7 @@ label {
 }
 
 .supabase-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
 }
 
@@ -342,6 +342,22 @@ label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#managePanel button,
+#managePanel .file-button {
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+#managePanel button:hover,
+#managePanel .file-button:hover {
+  background: var(--soft);
+}
+
+.manage-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .today-card .button-row {
@@ -847,8 +863,7 @@ label {
   }
 
   .tools,
-  .style-options,
-  .manage-actions {
+  .style-options {
     grid-template-columns: 1fr auto auto auto;
     align-items: end;
   }
@@ -886,11 +901,19 @@ label {
   .date-filter-options {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
+
+  .supabase-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .manage-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 480px) {
   .supabase-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 5px;
   }
 

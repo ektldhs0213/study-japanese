@@ -1,12 +1,12 @@
-const CACHE_NAME = "japanese-sentence-card-v202607250156";
+const CACHE_NAME = "japanese-sentence-card-v202607250202";
 const APP_FILES = [
   "./",
   "./index.html",
   "./config.js",
-  "./lib/supabase.js?v=202607250156",
-  "./services/japaneseService.js?v=202607250156",
-  "./style.css?v=202607250156",
-  "./app.js?v=202607250156",
+  "./lib/supabase.js?v=202607250202",
+  "./services/japaneseService.js?v=202607250202",
+  "./style.css?v=202607250202",
+  "./app.js?v=202607250202",
   "./manifest.json"
 ];
 
