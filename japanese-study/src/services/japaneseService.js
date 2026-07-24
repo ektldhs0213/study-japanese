@@ -43,7 +43,9 @@
         meaning: word.meaning,
         pos: word.pos || word.category,
         semantic_tags: word.semanticTags || word.semantic_tags || [],
-        created_at: word.createdAt || (word.createdDate ? `${word.createdDate}T00:00:00.000Z` : new Date().toISOString())
+        created_at: word.createdDate
+          ? `${word.createdDate}T00:00:00.000Z`
+          : word.createdAt || new Date().toISOString()
       };
       const japanese = encode(record.japanese);
       const pos = encode(record.pos);
@@ -51,7 +53,18 @@
         "jp_words",
         `?select=*&japanese=eq.${japanese}&pos=eq.${pos}&limit=1`
       );
-      if (existingRows.length > 0) return toAppWord(existingRows[0]);
+      if (existingRows.length > 0) {
+        const rows = await global.SupabaseClient.rest(
+          "jp_words",
+          `?id=eq.${encode(existingRows[0].id)}&select=*`,
+          {
+            method: "PATCH",
+            headers: jsonHeaders,
+            body: JSON.stringify(record)
+          }
+        );
+        return toAppWord(rows[0]);
+      }
 
       const rows = await global.SupabaseClient.rest("jp_words", {
         method: "POST",

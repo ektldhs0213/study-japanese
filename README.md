@@ -132,7 +132,8 @@ supabase/migrations/202607240001_initial_schema.sql
 ```
 
 3. 기존 Auth 기반 DB라면 `202607240003_public_japanese_schema.sql`을 실행합니다.
-4. Project URL과 publishable/anon key를 Cloudflare Pages에 등록합니다.
+4. 기존 단어의 입력 날짜와 내용을 갱신하려면 `202607240004_public_jp_word_updates.sql`을 실행합니다.
+5. Project URL과 publishable/anon key를 Cloudflare Pages에 등록합니다.
 
 Migration에는 다음이 포함됩니다.
 

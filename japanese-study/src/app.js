@@ -195,13 +195,17 @@ async function loadWordsFromSupabase() {
     const mergedWords = [...remoteWords];
 
     for (const word of localPending) {
-      if (mergedWords.some((remoteWord) => isSameWord(remoteWord, word))) continue;
+      const remoteIndex = mergedWords.findIndex((remoteWord) => isSameWord(remoteWord, word));
 
       try {
         const savedWord = await window.JapaneseService.saveWord(word);
-        mergedWords.push(cleanStoredWord({ ...savedWord, syncStatus: "synced" }));
+        const syncedWord = cleanStoredWord({ ...savedWord, syncStatus: "synced" });
+        if (remoteIndex >= 0) mergedWords[remoteIndex] = syncedWord;
+        else mergedWords.push(syncedWord);
       } catch {
-        mergedWords.push({ ...word, syncStatus: "pending" });
+        const pendingWord = { ...word, syncStatus: "pending" };
+        if (remoteIndex >= 0) mergedWords[remoteIndex] = pendingWord;
+        else mergedWords.push(pendingWord);
       }
     }
 
