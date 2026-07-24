@@ -21,7 +21,10 @@ const state = {
   kanaList: [],
   wordStudyIndex: 0,
   wordStudyShowAnswer: false,
-  wordStudyDateFilter: "all",
+  wordStudyFilterMode: "all",
+  wordStudySelectedDates: [],
+  wordStudyStartDate: "",
+  wordStudyEndDate: "",
   todayRevealed: false,
   currentIndex: 0,
   todayIndex: 0,
@@ -44,24 +47,21 @@ const elements = {
     sentences: $("#sentencesPanel"),
     manage: $("#managePanel")
   },
-  wordForm: $("#wordForm"),
-  jpInput: $("#jpInput"),
-  readingInput: $("#readingInput"),
-  meaningInput: $("#meaningInput"),
-  categoryInput: $("#categoryInput"),
-  semanticTagsInput: $("#semanticTagsInput"),
-  wordDateInput: $("#wordDateInput"),
   bulkDateInput: $("#bulkDateInput"),
   bulkInput: $("#bulkInput"),
   bulkAddBtn: $("#bulkAddBtn"),
-  clearWordsBtn: $("#clearWordsBtn"),
-  wordCount: $("#wordCount"),
-  wordList: $("#wordList"),
   wordStudyPosition: $("#wordStudyPosition"),
   wordStudyJapanese: $("#wordStudyJapanese"),
   wordStudyMeaning: $("#wordStudyMeaning"),
   wordStudyReading: $("#wordStudyReading"),
-  wordStudyDateFilter: $("#wordStudyDateFilter"),
+  wordStudyAllFilterBtn: $("#wordStudyAllFilterBtn"),
+  wordStudyDatesFilterBtn: $("#wordStudyDatesFilterBtn"),
+  wordStudyRangeFilterBtn: $("#wordStudyRangeFilterBtn"),
+  wordStudyDateOptions: $("#wordStudyDateOptions"),
+  wordStudyRangeFields: $("#wordStudyRangeFields"),
+  wordStudyStartDate: $("#wordStudyStartDate"),
+  wordStudyEndDate: $("#wordStudyEndDate"),
+  wordStudyFilterSummary: $("#wordStudyFilterSummary"),
   prevWordStudyBtn: $("#prevWordStudyBtn"),
   nextWordStudyBtn: $("#nextWordStudyBtn"),
   randomWordStudyBtn: $("#randomWordStudyBtn"),
@@ -118,6 +118,8 @@ const elements = {
   saveGeminiKeyBtn: $("#saveGeminiKeyBtn"),
   testGeminiKeyBtn: $("#testGeminiKeyBtn"),
   clearGeminiKeyBtn: $("#clearGeminiKeyBtn"),
+  testAiConnectionBtn: $("#testAiConnectionBtn"),
+  aiConnectionStatus: $("#aiConnectionStatus"),
   exportOutput: $("#exportOutput"),
   toast: $("#toast")
 };
@@ -221,13 +223,13 @@ async function syncWordToSupabase(word, options = {}) {
     const index = state.words.findIndex((item) => isSameWord(item, word));
     if (index >= 0) state.words[index] = syncedWord;
     saveWords();
-    renderWordList();
+    renderWordStudyFilters();
     if (!options.silent) showToast("로컬 및 Supabase 저장 완료");
     return true;
   } catch (error) {
     word.syncStatus = "pending";
     saveWords();
-    renderWordList();
+    renderWordStudyFilters();
     if (!options.silent) {
       showToast(`로컬 저장 완료 · Supabase 저장 실패 (${shortenMessage(error.message)})`);
     }
@@ -258,7 +260,6 @@ function saveGenerationOptions() {
 
 function setDefaultWordDateInputs() {
   const today = todayDateKey();
-  elements.wordDateInput.value = elements.wordDateInput.value || today;
   elements.bulkDateInput.value = elements.bulkDateInput.value || today;
 }
 
@@ -267,29 +268,19 @@ function bindEvents() {
     tab.addEventListener("click", () => switchTab(tab.dataset.tab));
   });
 
-  elements.wordForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    await addWord({
-      jp: elements.jpInput.value,
-      reading: elements.readingInput.value,
-      meaning: elements.meaningInput.value,
-      pos: elements.categoryInput.value,
-      semanticTags: elements.semanticTagsInput.value,
-      createdDate: elements.wordDateInput.value
-    });
-    elements.wordForm.reset();
-    setDefaultWordDateInputs();
-  });
-
   elements.bulkAddBtn.addEventListener("click", addBulkWords);
-  elements.clearWordsBtn.addEventListener("click", clearWordsOnly);
   elements.prevWordStudyBtn.addEventListener("click", () => moveWordStudy(-1));
   elements.nextWordStudyBtn.addEventListener("click", () => moveWordStudy(1));
   elements.randomWordStudyBtn.addEventListener("click", showRandomWordStudy);
   elements.toggleWordStudyAnswerBtn.addEventListener("click", toggleWordStudyAnswer);
   elements.speakWordStudyBtn.addEventListener("click", () => speakText(getCurrentWordStudy()?.jp));
   elements.shuffleWordStudyBtn.addEventListener("click", shuffleWordStudy);
-  elements.wordStudyDateFilter.addEventListener("change", updateWordStudyDateFilter);
+  elements.wordStudyAllFilterBtn.addEventListener("click", () => setWordStudyFilterMode("all"));
+  elements.wordStudyDatesFilterBtn.addEventListener("click", () => setWordStudyFilterMode("dates"));
+  elements.wordStudyRangeFilterBtn.addEventListener("click", () => setWordStudyFilterMode("range"));
+  elements.wordStudyDateOptions.addEventListener("change", updateWordStudySelectedDates);
+  elements.wordStudyStartDate.addEventListener("change", updateWordStudyDateRange);
+  elements.wordStudyEndDate.addEventListener("change", updateWordStudyDateRange);
   elements.hiraganaModeBtn.addEventListener("click", () => setKanaMode("hiragana"));
   elements.katakanaModeBtn.addEventListener("click", () => setKanaMode("katakana"));
   elements.prevKanaBtn.addEventListener("click", () => moveKana(-1));
@@ -321,11 +312,12 @@ function bindEvents() {
   elements.shuffleListBtn.addEventListener("click", shuffleVisibleSentences);
   elements.exportBtn.addEventListener("click", exportJson);
   elements.importInput.addEventListener("change", importJson);
-  elements.clearBtn.addEventListener("click", clearAllData);
+  elements.clearBtn.addEventListener("click", resetLocalCache);
   elements.geminiApiKeyInput.addEventListener("input", handleGeminiKeyInput);
   elements.saveGeminiKeyBtn.addEventListener("click", saveGeminiApiKey);
   elements.testGeminiKeyBtn.addEventListener("click", testGeminiApiKey);
   elements.clearGeminiKeyBtn.addEventListener("click", clearGeminiApiKey);
+  elements.testAiConnectionBtn.addEventListener("click", testAiConnection);
   elements.installBtn.addEventListener("click", installPwa);
   window.addEventListener("online", syncPendingWords);
 
@@ -970,51 +962,6 @@ function mergeCommaValues(first, second) {
   ).join(", ");
 }
 
-async function deleteWord(wordId) {
-  const deletedWord = state.words.find((word) => word.id === wordId);
-  state.words = state.words.filter((word) => word.id !== wordId);
-  afterWordsChanged("단어를 삭제했습니다.");
-  if (deletedWord?.syncStatus === "synced" && window.JapaneseService?.isRemoteReady() && navigator.onLine) {
-    try {
-      await window.JapaneseService.deleteWord(wordId);
-      showToast("로컬 및 Supabase에서 삭제했습니다.");
-    } catch (error) {
-      showToast(`로컬 삭제 완료 · Supabase 삭제 실패 (${shortenMessage(error.message)})`);
-    }
-  }
-}
-
-async function clearWordsOnly() {
-  if (state.words.length === 0) {
-    showToast("삭제할 단어가 없습니다.");
-    return;
-  }
-
-  const ok = confirm("입력한 단어를 모두 삭제할까요? AI 문장과 표시도 함께 삭제됩니다.");
-  if (!ok) return;
-
-  state.words = [];
-  state.marks = {};
-  state.aiSentences = [];
-  state.wordStudyIndex = 0;
-  state.wordStudyShowAnswer = false;
-  state.wordStudyDateFilter = "all";
-  saveWords();
-  saveMarks();
-  saveAiSentences();
-  generateSentences();
-  renderAll();
-  showToast("입력한 단어를 모두 삭제했습니다.");
-  if (window.JapaneseService?.isRemoteReady() && navigator.onLine) {
-    try {
-      await window.JapaneseService.deleteAllWords();
-      showToast("공용 단어를 로컬 및 Supabase에서 모두 삭제했습니다.");
-    } catch (error) {
-      showToast(`로컬 삭제 완료 · Supabase 전체 삭제 실패 (${shortenMessage(error.message)})`);
-    }
-  }
-}
-
 function afterWordsChanged(message) {
   saveWords();
   state.aiSentences = [];
@@ -1025,7 +972,7 @@ function afterWordsChanged(message) {
   state.todayRevealed = false;
   state.wordStudyIndex = 0;
   state.wordStudyShowAnswer = false;
-  state.wordStudyDateFilter = "all";
+  resetWordStudyFilters();
   renderAll();
   showToast(message);
 }
@@ -1793,42 +1740,12 @@ function uniqueSentences(sentences) {
 }
 
 function renderAll() {
-  renderWordCount();
-  renderWordList();
-  renderWordStudyDateFilter();
+  renderWordStudyFilters();
   renderWordStudy();
   renderKana();
   renderTodaySentence();
   renderCard();
   renderSentenceList();
-}
-
-function renderWordCount() {
-  elements.wordCount.textContent = `${state.words.length}개`;
-}
-
-function renderWordList() {
-  if (state.words.length === 0) {
-    elements.wordList.innerHTML = `<div class="word-item">아직 저장된 단어가 없습니다.</div>`;
-    return;
-  }
-
-  elements.wordList.innerHTML = state.words.map((word) => `
-    <div class="word-item">
-      <div class="word-main">
-        <strong>${escapeHtml(word.jp)}</strong>
-        <button class="small-button danger-button" type="button" data-delete-word="${word.id}">삭제</button>
-      </div>
-      <div class="word-meta">
-        ${escapeHtml(word.reading)} · ${escapeHtml(word.meaning)} · 입력일 ${escapeHtml(word.createdDate)}<br />
-        pos: ${escapeHtml(word.pos)} · tags: ${escapeHtml(word.semanticTags.join(", ") || "-")} · 기존분류: ${escapeHtml(word.legacyCategory)} · ${word.syncStatus === "synced" ? "Supabase" : "동기화 대기"}
-      </div>
-    </div>
-  `).join("");
-
-  $$("[data-delete-word]").forEach((button) => {
-    button.addEventListener("click", () => deleteWord(button.dataset.deleteWord));
-  });
 }
 
 function renderWordStudy() {
@@ -1891,36 +1808,107 @@ function shuffleWordStudy() {
   state.wordStudyShowAnswer = false;
   saveWords();
   renderWordStudy();
-  renderWordList();
   showToast("단어 순서를 섞었습니다.");
 }
 
 function getWordStudyWords() {
-  if (state.wordStudyDateFilter === "all") return state.words;
-  return state.words.filter((word) => word.createdDate === state.wordStudyDateFilter);
-}
-
-function renderWordStudyDateFilter() {
-  const dates = [...new Set(state.words.map((word) => word.createdDate).filter(Boolean))].sort().reverse();
-  if (state.wordStudyDateFilter !== "all" && !dates.includes(state.wordStudyDateFilter)) {
-    state.wordStudyDateFilter = "all";
+  if (state.wordStudyFilterMode === "dates") {
+    if (state.wordStudySelectedDates.length === 0) return [];
+    return state.words.filter((word) => state.wordStudySelectedDates.includes(word.createdDate));
   }
 
-  elements.wordStudyDateFilter.innerHTML = [
-    `<option value="all">전체 단어 (${state.words.length}개)</option>`,
-    ...dates.map((date) => {
-      const count = state.words.filter((word) => word.createdDate === date).length;
-      return `<option value="${escapeHtml(date)}">${escapeHtml(date)} (${count}개)</option>`;
-    })
-  ].join("");
-  elements.wordStudyDateFilter.value = state.wordStudyDateFilter;
+  if (state.wordStudyFilterMode === "range") {
+    return state.words.filter((word) => {
+      if (!word.createdDate) return false;
+      if (state.wordStudyStartDate && word.createdDate < state.wordStudyStartDate) return false;
+      if (state.wordStudyEndDate && word.createdDate > state.wordStudyEndDate) return false;
+      return true;
+    });
+  }
+
+  return state.words;
 }
 
-function updateWordStudyDateFilter() {
-  state.wordStudyDateFilter = elements.wordStudyDateFilter.value;
+function renderWordStudyFilters() {
+  const dates = [...new Set(state.words.map((word) => word.createdDate).filter(Boolean))].sort().reverse();
+  state.wordStudySelectedDates = state.wordStudySelectedDates.filter((date) => dates.includes(date));
+
+  elements.wordStudyDateOptions.innerHTML = dates.length
+    ? dates.map((date) => {
+        const count = state.words.filter((word) => word.createdDate === date).length;
+        const checked = state.wordStudySelectedDates.includes(date) ? " checked" : "";
+        return `
+          <label class="date-filter-chip">
+            <input type="checkbox" value="${escapeHtml(date)}"${checked} />
+            <span>${escapeHtml(date)} · ${count}개</span>
+          </label>
+        `;
+      }).join("")
+    : `<p class="helper-text">선택할 입력 날짜가 없습니다.</p>`;
+
+  elements.wordStudyAllFilterBtn.classList.toggle("active", state.wordStudyFilterMode === "all");
+  elements.wordStudyDatesFilterBtn.classList.toggle("active", state.wordStudyFilterMode === "dates");
+  elements.wordStudyRangeFilterBtn.classList.toggle("active", state.wordStudyFilterMode === "range");
+  elements.wordStudyDateOptions.classList.toggle("hidden", state.wordStudyFilterMode !== "dates");
+  elements.wordStudyRangeFields.classList.toggle("hidden", state.wordStudyFilterMode !== "range");
+  elements.wordStudyStartDate.value = state.wordStudyStartDate;
+  elements.wordStudyEndDate.value = state.wordStudyEndDate;
+
+  const filteredCount = getWordStudyWords().length;
+  if (state.wordStudyFilterMode === "dates") {
+    elements.wordStudyFilterSummary.textContent = `${state.wordStudySelectedDates.length}개 날짜 · ${filteredCount}개 단어`;
+  } else if (state.wordStudyFilterMode === "range") {
+    const start = state.wordStudyStartDate || "처음";
+    const end = state.wordStudyEndDate || "오늘";
+    elements.wordStudyFilterSummary.textContent = `${start} ~ ${end} · ${filteredCount}개 단어`;
+  } else {
+    elements.wordStudyFilterSummary.textContent = `전체 단어 ${state.words.length}개`;
+  }
+}
+
+function setWordStudyFilterMode(mode) {
+  state.wordStudyFilterMode = mode;
   state.wordStudyIndex = 0;
   state.wordStudyShowAnswer = false;
+  renderWordStudyFilters();
   renderWordStudy();
+}
+
+function updateWordStudySelectedDates() {
+  state.wordStudySelectedDates = [...elements.wordStudyDateOptions.querySelectorAll("input:checked")]
+    .map((input) => input.value);
+  state.wordStudyFilterMode = "dates";
+  state.wordStudyIndex = 0;
+  state.wordStudyShowAnswer = false;
+  renderWordStudyFilters();
+  renderWordStudy();
+}
+
+function updateWordStudyDateRange() {
+  state.wordStudyStartDate = elements.wordStudyStartDate.value;
+  state.wordStudyEndDate = elements.wordStudyEndDate.value;
+  if (
+    state.wordStudyStartDate
+    && state.wordStudyEndDate
+    && state.wordStudyStartDate > state.wordStudyEndDate
+  ) {
+    [state.wordStudyStartDate, state.wordStudyEndDate] = [
+      state.wordStudyEndDate,
+      state.wordStudyStartDate
+    ];
+  }
+  state.wordStudyFilterMode = "range";
+  state.wordStudyIndex = 0;
+  state.wordStudyShowAnswer = false;
+  renderWordStudyFilters();
+  renderWordStudy();
+}
+
+function resetWordStudyFilters() {
+  state.wordStudyFilterMode = "all";
+  state.wordStudySelectedDates = [];
+  state.wordStudyStartDate = "";
+  state.wordStudyEndDate = "";
 }
 
 function renderTodaySentence() {
@@ -2332,6 +2320,31 @@ async function testGeminiApiKey() {
   }
 }
 
+async function testAiConnection() {
+  if (!window.JapaneseService?.isRemoteReady()) {
+    elements.aiConnectionStatus.textContent = "Supabase 환경변수를 먼저 설정해 주세요.";
+    showToast("Supabase 연결 설정이 필요합니다.");
+    return;
+  }
+
+  elements.testAiConnectionBtn.disabled = true;
+  elements.testAiConnectionBtn.textContent = "AI 연결 확인 중...";
+  elements.aiConnectionStatus.textContent = "Gemini 응답을 기다리고 있습니다. 최대 1분이 걸릴 수 있습니다.";
+
+  try {
+    await window.JapaneseService.testAiConnection();
+    elements.aiConnectionStatus.textContent = "AI 연결 성공 · Gemini 문장 생성을 사용할 수 있습니다.";
+    showToast("AI 연결 테스트에 성공했습니다.");
+  } catch (error) {
+    const message = getAiErrorMessage(error);
+    elements.aiConnectionStatus.textContent = message;
+    showToast(message);
+  } finally {
+    elements.testAiConnectionBtn.disabled = false;
+    elements.testAiConnectionBtn.textContent = "AI 연결 테스트";
+  }
+}
+
 function buildGeminiPrompt() {
   const words = state.words.map((word) => ({
     japanese: word.jp,
@@ -2438,6 +2451,10 @@ function normalizeAiSentences(sentences) {
 
 function getAiErrorMessage(error) {
   const message = String(error.message || "");
+  if (error.code === "AI_TIMEOUT" || /1분을 초과|timed? ?out|timeout/i.test(message)) {
+    return "AI 응답이 1분 안에 오지 않아 요청을 중단했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+
   const quotaLike = error.status === 429 || /quota|rate|limit|exhausted|credit/i.test(message);
   if (quotaLike) {
     return "AI 무료 사용량 또는 credit이 소진되어 지금은 사용할 수 없습니다.";
@@ -2531,15 +2548,15 @@ function importJson(event) {
   event.target.value = "";
 }
 
-function clearAllData() {
-  const ok = confirm("저장된 단어와 표시를 모두 삭제할까요?");
+async function resetLocalCache() {
+  const ok = confirm("이 기기에 저장된 캐시만 초기화할까요? Supabase 공용 데이터는 삭제되지 않습니다.");
   if (!ok) return;
   state.words = [];
   state.marks = {};
   state.aiSentences = [];
   state.wordStudyIndex = 0;
   state.wordStudyShowAnswer = false;
-  state.wordStudyDateFilter = "all";
+  resetWordStudyFilters();
   state.generationOptions = normalizeSentenceStyle();
   saveGenerationOptions();
   syncGenerationOptionInputs();
@@ -2548,7 +2565,8 @@ function clearAllData() {
   saveAiSentences();
   generateSentences();
   renderAll();
-  showToast("전체 데이터를 삭제했습니다.");
+  showToast("이 기기 캐시를 초기화했습니다. Supabase 데이터는 유지됩니다.");
+  await loadWordsFromSupabase();
 }
 
 function getSupabaseDisplayUrl() {

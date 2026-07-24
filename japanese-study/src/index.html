@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>일본어 문장 카드</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="style.css?v=202607241534" />
+    <link rel="stylesheet" href="style.css?v=202607242052" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">개인 일본어 학습 PWA</p>
         <h1>일본어 문장 카드</h1>
-        <p class="source-date">소스날짜 : 07월24일 15시 34분</p>
+        <p class="source-date">소스날짜 : 07월24일 20시 52분</p>
       </div>
       <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
     </header>
@@ -52,41 +52,9 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">단어장</p>
-            <h2 id="wordsTitle">배운 단어 입력</h2>
-          </div>
-          <div class="heading-actions">
-            <span id="wordCount" class="count-badge">0개</span>
-            <button id="clearWordsBtn" class="small-button danger-button" type="button">단어 전체 삭제</button>
+            <h2 id="wordsTitle">여러 줄 빠른 입력</h2>
           </div>
         </div>
-
-        <form id="wordForm" class="word-form">
-          <label>
-            일본어
-            <input id="jpInput" type="text" placeholder="かんこくじん" autocomplete="off" required />
-          </label>
-          <label>
-            한국어 발음
-            <input id="readingInput" type="text" placeholder="캉코쿠진" autocomplete="off" required />
-          </label>
-          <label>
-            한국어 뜻
-            <input id="meaningInput" type="text" placeholder="한국인" autocomplete="off" required />
-          </label>
-          <label>
-            pos
-            <input id="categoryInput" type="text" placeholder="noun" autocomplete="off" required />
-          </label>
-          <label>
-            semanticTags
-            <input id="semanticTagsInput" type="text" placeholder="place,facility" autocomplete="off" required />
-          </label>
-          <label>
-            입력일
-            <input id="wordDateInput" type="date" required />
-          </label>
-          <button type="submit">단어 저장</button>
-        </form>
 
         <div class="quick-add">
           <label>
@@ -97,8 +65,6 @@
           <textarea id="bulkInput" rows="9" placeholder="わたし/와타시/나, 저/pronoun/person,human&#10;みせ/미세/가게/noun/place,facility&#10;おいしい/오이시이/맛있다/i_adjective/taste,food"></textarea>
           <button id="bulkAddBtn" type="button">여러 단어 저장</button>
         </div>
-
-        <div id="wordList" class="word-list"></div>
       </section>
 
       <section id="wordStudyPanel" class="panel" aria-labelledby="wordStudyTitle">
@@ -116,12 +82,28 @@
           <p id="wordStudyReading" class="kana-korean hidden">발음</p>
         </article>
 
-        <label class="word-study-filter">
-          입력 날짜 필터
-          <select id="wordStudyDateFilter">
-            <option value="all">전체 단어</option>
-          </select>
-        </label>
+        <div class="word-study-filter" aria-label="단어 입력 날짜 필터">
+          <div class="segmented-control filter-mode-control">
+            <button id="wordStudyAllFilterBtn" class="active" type="button">전체</button>
+            <button id="wordStudyDatesFilterBtn" type="button">날짜 선택</button>
+            <button id="wordStudyRangeFilterBtn" type="button">기간</button>
+          </div>
+
+          <div id="wordStudyDateOptions" class="date-filter-options hidden"></div>
+
+          <div id="wordStudyRangeFields" class="date-range-fields hidden">
+            <label>
+              시작일
+              <input id="wordStudyStartDate" type="date" />
+            </label>
+            <label>
+              종료일
+              <input id="wordStudyEndDate" type="date" />
+            </label>
+          </div>
+
+          <p id="wordStudyFilterSummary" class="helper-text">전체 단어를 학습합니다.</p>
+        </div>
 
         <div class="button-grid">
           <button id="prevWordStudyBtn" type="button">이전</button>
@@ -246,21 +228,33 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">관리</p>
-            <h2 id="manageTitle">단어장 백업</h2>
+            <h2 id="manageTitle">연결 및 백업 관리</h2>
           </div>
         </div>
 
-        <div class="manage-actions">
-          <button id="exportBtn" type="button">JSON 내보내기</button>
-          <label class="file-button">
-            JSON 가져오기
-            <input id="importInput" type="file" accept="application/json" />
-          </label>
-          <button id="clearBtn" class="danger-button" type="button">전체 삭제</button>
+        <div class="management-section">
+          <div>
+            <p class="eyebrow">단어장 백업</p>
+            <h3>백업과 복원</h3>
+          </div>
+          <div class="manage-actions">
+            <button id="exportBtn" type="button">JSON 내보내기</button>
+            <label class="file-button">
+              JSON 가져오기
+              <input id="importInput" type="file" accept="application/json" />
+            </label>
+            <button id="clearBtn" class="ghost-button" type="button">이 기기 캐시 초기화</button>
+          </div>
+          <textarea id="exportOutput" rows="8" readonly placeholder="내보낸 JSON이 여기에 표시됩니다."></textarea>
         </div>
-        <div class="api-key-box">
+
+        <div class="management-section api-key-box">
+          <div>
+            <p class="eyebrow">Supabase 프로젝트 확인</p>
+            <h3>공용 데이터 연결</h3>
+          </div>
           <label>
-            Supabase 프로젝트
+            프로젝트 URL
             <input id="geminiApiKeyInput" type="text" placeholder="Cloudflare 빌드 환경변수에서 설정" autocomplete="off" readonly />
           </label>
           <div class="button-row">
@@ -268,10 +262,19 @@
             <button id="testGeminiKeyBtn" class="ghost-button" type="button">Supabase 연결 테스트</button>
             <button id="clearGeminiKeyBtn" class="ghost-button" type="button">상태 새로고침</button>
           </div>
-          <p class="helper-text">Supabase URL과 anon key는 Cloudflare Pages 환경변수에서 설정합니다. Gemini 키는 Supabase Edge Function secret으로만 관리합니다.</p>
+          <p class="helper-text">Supabase URL과 anon key는 Cloudflare Pages 환경변수에서 설정합니다.</p>
           <p id="geminiKeyStatus" class="helper-text"></p>
         </div>
-        <textarea id="exportOutput" rows="8" readonly placeholder="내보낸 JSON이 여기에 표시됩니다."></textarea>
+
+        <div class="management-section">
+          <div>
+            <p class="eyebrow">AI 연결 확인</p>
+            <h3>Gemini 문장 생성</h3>
+          </div>
+          <p class="helper-text">Gemini 키는 Supabase Edge Function secret으로 관리하며, 요청 제한 시간은 1분입니다.</p>
+          <button id="testAiConnectionBtn" type="button">AI 연결 테스트</button>
+          <p id="aiConnectionStatus" class="connection-status">아직 테스트하지 않았습니다.</p>
+        </div>
       </section>
     </main>
 
@@ -280,6 +283,6 @@
     <script src="config.js"></script>
     <script src="lib/supabase.js"></script>
     <script src="services/japaneseService.js"></script>
-    <script src="app.js?v=202607241534"></script>
+    <script src="app.js?v=202607242052"></script>
   </body>
 </html>

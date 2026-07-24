@@ -43,12 +43,20 @@ alter table public.jp_words
 
 drop policy if exists "Users manage own jp_words" on public.jp_words;
 drop policy if exists "Public users manage jp_words" on public.jp_words;
+drop policy if exists "Public reads jp_words" on public.jp_words;
+drop policy if exists "Public inserts jp_words" on public.jp_words;
 
-create policy "Public users manage jp_words"
+create policy "Public reads jp_words"
 on public.jp_words
-for all
+for select
 to anon, authenticated
-using (true)
+using (true);
+
+create policy "Public inserts jp_words"
+on public.jp_words
+for insert
+to anon, authenticated
 with check (true);
 
-grant select, insert, update, delete on public.jp_words to anon, authenticated;
+revoke update, delete on public.jp_words from anon, authenticated;
+grant select, insert on public.jp_words to anon, authenticated;

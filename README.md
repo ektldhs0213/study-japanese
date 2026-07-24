@@ -151,6 +151,11 @@ bg_scores
 조회와 추가를 허용합니다. 보드게임 테이블은 기존 authenticated 정책을
 유지합니다.
 
+일반 사용자의 UPDATE/DELETE 권한은 없습니다. 일본어 데이터 삭제가
+필요하면 관리자가 Supabase Table Editor 또는 SQL Editor에서 직접
+처리합니다. 앱의 캐시 초기화 버튼은 현재 기기의 localStorage만 비우며
+Supabase 데이터는 삭제하지 않습니다.
+
 일본어 테이블의 운영 컬럼:
 
 ```text

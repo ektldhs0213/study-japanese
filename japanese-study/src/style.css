@@ -265,9 +265,36 @@ label {
 .style-options,
 .word-study-filter,
 .manage-actions,
-.api-key-box {
+.api-key-box,
+.management-section {
   display: grid;
   gap: 12px;
+}
+
+.management-section {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.management-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.management-section h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.connection-status,
+#geminiKeyStatus {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-strong);
+  padding: 10px 12px;
+  color: var(--text);
 }
 
 .word-form {
@@ -477,10 +504,51 @@ label {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
+.filter-mode-control {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.date-filter-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.date-filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.date-filter-chip input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.date-filter-chip:has(input:checked) {
+  border-color: var(--text);
+  background: var(--soft);
+}
+
+.date-range-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .kana-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: min(100%, 640px);
+  margin: 0 auto;
+  gap: 8px;
 }
 
 .kana-tile {
@@ -493,6 +561,7 @@ label {
   background: var(--surface-strong);
   color: var(--text);
   cursor: pointer;
+  min-width: 0;
 }
 
 .kana-tile.active {
@@ -630,6 +699,29 @@ label {
     border-radius: 12px;
     padding: 0 12px;
     font-size: 14px;
+  }
+
+  .kana-grid {
+    gap: 5px;
+  }
+
+  .kana-tile {
+    min-height: 64px;
+    border-radius: 12px;
+    padding: 6px 2px;
+  }
+
+  .kana-tile strong {
+    font-size: 24px;
+  }
+
+  .kana-tile span {
+    font-size: 10px;
+  }
+
+  .date-filter-options,
+  .date-range-fields {
+    grid-template-columns: 1fr;
   }
 
   .tab {

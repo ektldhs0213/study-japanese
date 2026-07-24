@@ -1,5 +1,6 @@
 (function createJapaneseService(global) {
   const jsonHeaders = { Prefer: "return=representation" };
+  const AI_TIMEOUT_MS = 60_000;
 
   function encode(value) {
     return encodeURIComponent(value);
@@ -59,18 +60,6 @@
       });
       return toAppWord(rows[0]);
     },
-    deleteWord(id) {
-      return global.SupabaseClient.rest(`jp_words?id=eq.${encode(id)}`, {
-        method: "DELETE",
-        headers: jsonHeaders
-      });
-    },
-    deleteAllWords() {
-      return global.SupabaseClient.rest("jp_words?id=not.is.null", {
-        method: "DELETE",
-        headers: jsonHeaders
-      });
-    },
     async listSentences() {
       const rows = await global.SupabaseClient.rest("jp_sentences", "?select=*&order=created_at.desc");
       return rows.map(toAppSentence);
@@ -99,20 +88,44 @@
     },
     async generateSentences(payload) {
       const config = global.APP_CONFIG || {};
-      const response = await fetch(`${String(config.SUPABASE_URL).replace(/\/+$/, "")}/functions/v1/generate-japanese-sentences`, {
-        method: "POST",
-        headers: {
-          apikey: config.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${config.SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(body?.error || body?.message || `AI function failed (${response.status})`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(`${String(config.SUPABASE_URL).replace(/\/+$/, "")}/functions/v1/generate-japanese-sentences`, {
+          method: "POST",
+          headers: {
+            apikey: config.SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${config.SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(body?.error || body?.message || `AI function failed (${response.status})`);
+        }
+        return body;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          const timeoutError = new Error("AI 요청이 1분을 초과하여 중단되었습니다.");
+          timeoutError.code = "AI_TIMEOUT";
+          throw timeoutError;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
       }
-      return body;
+    },
+    testAiConnection() {
+      return this.generateSentences({
+        prompt: [
+          "연결 상태 확인용 요청입니다.",
+          "반드시 다음 JSON만 반환하세요.",
+          "{\"sentences\":[]}"
+        ].join("\n")
+      });
     }
   });
 })(window);
