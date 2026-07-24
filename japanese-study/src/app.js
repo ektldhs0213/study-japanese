@@ -2196,7 +2196,7 @@ function renderKanaGrid() {
   $$("[data-kana-index]").forEach((button) => {
     button.addEventListener("click", () => {
       state.kanaIndex = Number(button.dataset.kanaIndex);
-      state.kanaShowAnswer = true;
+      state.kanaShowAnswer = false;
       renderKana();
     });
   });
