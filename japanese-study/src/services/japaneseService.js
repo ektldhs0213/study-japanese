@@ -47,28 +47,9 @@
           ? `${word.createdDate}T00:00:00.000Z`
           : word.createdAt || new Date().toISOString()
       };
-      const japanese = encode(record.japanese);
-      const pos = encode(record.pos);
-      const existingRows = await global.SupabaseClient.rest(
-        "jp_words",
-        `?select=*&japanese=eq.${japanese}&pos=eq.${pos}&limit=1`
-      );
-      if (existingRows.length > 0) {
-        const rows = await global.SupabaseClient.rest(
-          "jp_words",
-          `?id=eq.${encode(existingRows[0].id)}&select=*`,
-          {
-            method: "PATCH",
-            headers: jsonHeaders,
-            body: JSON.stringify(record)
-          }
-        );
-        return toAppWord(rows[0]);
-      }
-
-      const rows = await global.SupabaseClient.rest("jp_words", {
+      const rows = await global.SupabaseClient.rest("jp_words", "?on_conflict=japanese,pos&select=*", {
         method: "POST",
-        headers: jsonHeaders,
+        headers: { Prefer: "resolution=merge-duplicates,return=representation" },
         body: JSON.stringify(record)
       });
       return toAppWord(rows[0]);
