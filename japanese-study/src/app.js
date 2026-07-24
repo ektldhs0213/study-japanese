@@ -31,7 +31,8 @@ const state = {
   showMeaning: true,
   showReading: true,
   deferredInstallPrompt: null,
-  remoteSyncing: false
+  remoteSyncing: false,
+  wordSaving: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -185,7 +186,7 @@ function saveWords() {
 }
 
 async function loadWordsFromSupabase() {
-  if (!window.JapaneseService?.isRemoteReady() || state.remoteSyncing) return false;
+  if (!window.JapaneseService?.isRemoteReady() || state.remoteSyncing || state.wordSaving) return false;
 
   state.remoteSyncing = true;
   try {
@@ -258,19 +259,60 @@ async function syncWordToSupabase(word, options = {}) {
 }
 
 async function syncPendingWords() {
-  if (state.remoteSyncing) return;
+  const pendingWords = state.words
+    .filter((word) => word.syncStatus !== "synced")
+    .map((word) => ({ ...word }));
+  if (pendingWords.length === 0) return { saved: 0, failed: 0 };
+
+  while (state.remoteSyncing) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
   if (!navigator.onLine) {
     state.words = state.words.filter((word) => word.syncStatus === "synced");
     generateSentences();
     renderAll();
     showToast("오프라인에서는 단어를 저장할 수 없습니다.");
-    return;
+    return { saved: 0, failed: pendingWords.length };
   }
-  const pendingWords = state.words.filter((word) => word.syncStatus !== "synced");
-  for (const word of pendingWords) {
-    await syncWordToSupabase(word, { silent: true });
+
+  state.wordSaving = true;
+  elements.bulkAddBtn.disabled = true;
+  let saved = 0;
+  let failed = 0;
+  let firstError = "";
+
+  try {
+    const batchSize = 6;
+    for (let index = 0; index < pendingWords.length; index += batchSize) {
+      const batch = pendingWords.slice(index, index + batchSize);
+      const results = await Promise.allSettled(
+        batch.map((word) => window.JapaneseService.saveWord(word))
+      );
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          saved += 1;
+        } else {
+          failed += 1;
+          firstError ||= shortenMessage(result.reason?.message);
+        }
+      });
+      elements.bulkAddBtn.textContent = `DB 저장 중 ${Math.min(index + batch.length, pendingWords.length)} / ${pendingWords.length}`;
+    }
+  } finally {
+    state.wordSaving = false;
+    elements.bulkAddBtn.disabled = false;
+    elements.bulkAddBtn.textContent = "여러 단어 저장";
   }
+
   await loadWordsFromSupabase();
+  if (failed > 0) {
+    showToast(`DB 저장 ${saved}개 성공 · ${failed}개 실패${firstError ? ` (${firstError})` : ""}`);
+  } else {
+    showToast(`Supabase DB에 ${saved}개 단어를 저장했습니다.`);
+  }
+  return { saved, failed };
 }
 
 function saveMarks() {
@@ -909,6 +951,7 @@ function sortSemanticTags(tags) {
 }
 
 async function addBulkWords() {
+  const originalInput = elements.bulkInput.value;
   const lines = elements.bulkInput.value.split("\n").map((line) => line.trim()).filter(Boolean);
   const bulkDate = elements.bulkDateInput.value || todayDateKey();
   let currentCategory = "미분류";
@@ -940,7 +983,8 @@ async function addBulkWords() {
 
   elements.bulkInput.value = "";
   afterWordsChanged(`${added}개 저장, ${updated}개 업데이트했습니다.`);
-  await syncPendingWords();
+  const result = await syncPendingWords();
+  if (result.failed > 0) elements.bulkInput.value = originalInput;
 }
 
 function upsertWord(word, addIndex) {
