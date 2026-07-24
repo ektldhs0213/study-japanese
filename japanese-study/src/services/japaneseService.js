@@ -15,7 +15,8 @@
       pos: row.pos,
       semanticTags: Array.isArray(row.semantic_tags) ? row.semantic_tags : [],
       createdAt: row.created_at,
-      createdDate: String(row.study_date || row.created_at || "").slice(0, 10),
+      studyDate: String(row.study_date || "").slice(0, 10),
+      createdDate: String(row.study_date || "").slice(0, 10),
       syncStatus: "synced"
     };
   }
@@ -43,7 +44,7 @@
         meaning: word.meaning,
         pos: String(word.pos || word.category || "").trim().toLowerCase(),
         semantic_tags: word.semanticTags || word.semantic_tags || [],
-        study_date: word.createdDate || new Date().toISOString().slice(0, 10)
+        study_date: word.studyDate || word.createdDate || new Date().toISOString().slice(0, 10)
       };
       const rows = await global.SupabaseClient.rest("jp_words", "?on_conflict=japanese,pos&select=*", {
         method: "POST",
@@ -51,8 +52,8 @@
         body: JSON.stringify(record)
       });
       const savedWord = toAppWord(rows[0]);
-      if (savedWord.createdDate !== record.study_date) {
-        throw new Error(`입력 날짜 저장 불일치 (${record.study_date} → ${savedWord.createdDate || "없음"})`);
+      if (savedWord.studyDate !== record.study_date) {
+        throw new Error(`입력 날짜 저장 불일치 (${record.study_date} → ${savedWord.studyDate || "없음"})`);
       }
       return savedWord;
     },

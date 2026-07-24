@@ -738,7 +738,7 @@ function cleanStoredSentence(sentence) {
 
 function migrateWord(word) {
   const legacyCategory = cleanInputPart(word.legacyCategory || word.category || "미분류");
-  const requestedDate = cleanInputPart(word.createdDate);
+  const requestedDate = cleanInputPart(word.studyDate || word.createdDate);
   const createdAt = cleanInputPart(word.createdAt) || (requestedDate ? `${requestedDate}T00:00:00.000` : new Date().toISOString());
   const createdDate = requestedDate || dateKeyFromValue(createdAt);
   const inferred = inferWordMetadata({ ...word, legacyCategory });
@@ -760,6 +760,7 @@ function migrateWord(word) {
     reading: cleanInputPart(word.reading),
     meaning: cleanInputPart(word.meaning),
     createdAt,
+    studyDate: createdDate,
     createdDate,
     translation,
     pos,
@@ -975,6 +976,7 @@ async function addBulkWords() {
 
     const word = normalizeWord({
       ...parsed.word,
+      studyDate: parsed.word.createdDate || bulkDate,
       createdDate: parsed.word.createdDate || bulkDate
     });
     if (word) {
@@ -1002,6 +1004,7 @@ function upsertWord(word, addIndex) {
     existing.reading = word.reading;
     existing.meaning = mergeCommaValues(existing.meaning, word.meaning);
     existing.createdAt = word.createdAt;
+    existing.studyDate = word.studyDate;
     existing.createdDate = word.createdDate;
     existing.pos = word.pos;
     existing.semanticTags = normalizeTags([...normalizeTags(existing.semanticTags), ...normalizeTags(word.semanticTags)]);
@@ -1901,7 +1904,7 @@ function renderWordStudyList() {
       <div>
         <strong lang="ja">${escapeHtml(word.jp)}</strong>
         <p>${escapeHtml(word.reading)} · ${escapeHtml(word.meaning)}</p>
-        <time datetime="${escapeHtml(word.createdDate || "")}">${escapeHtml(word.createdDate || "입력일 없음")}</time>
+        <time datetime="${escapeHtml(word.studyDate || "")}">${escapeHtml(word.studyDate || "학습일 없음")}</time>
       </div>
     </article>
   `).join("");
@@ -1948,14 +1951,14 @@ function shuffleWordStudy() {
 function getWordStudyWords() {
   if (state.wordStudyFilterMode === "dates") {
     if (state.wordStudySelectedDates.length === 0) return [];
-    return state.words.filter((word) => state.wordStudySelectedDates.includes(word.createdDate));
+    return state.words.filter((word) => state.wordStudySelectedDates.includes(word.studyDate));
   }
 
   if (state.wordStudyFilterMode === "range") {
     return state.words.filter((word) => {
-      if (!word.createdDate) return false;
-      if (state.wordStudyStartDate && word.createdDate < state.wordStudyStartDate) return false;
-      if (state.wordStudyEndDate && word.createdDate > state.wordStudyEndDate) return false;
+      if (!word.studyDate) return false;
+      if (state.wordStudyStartDate && word.studyDate < state.wordStudyStartDate) return false;
+      if (state.wordStudyEndDate && word.studyDate > state.wordStudyEndDate) return false;
       return true;
     });
   }
@@ -1964,12 +1967,12 @@ function getWordStudyWords() {
 }
 
 function renderWordStudyFilters() {
-  const dates = [...new Set(state.words.map((word) => word.createdDate).filter(Boolean))].sort().reverse();
+  const dates = [...new Set(state.words.map((word) => word.studyDate).filter(Boolean))].sort().reverse();
   state.wordStudySelectedDates = state.wordStudySelectedDates.filter((date) => dates.includes(date));
 
   elements.wordStudyDateOptions.innerHTML = dates.length
     ? dates.map((date) => {
-        const count = state.words.filter((word) => word.createdDate === date).length;
+        const count = state.words.filter((word) => word.studyDate === date).length;
         const checked = state.wordStudySelectedDates.includes(date) ? " checked" : "";
         return `
           <label class="date-filter-chip">
