@@ -46,6 +46,7 @@ button,
   background: var(--primary);
   color: #fff;
   padding: 0 16px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
@@ -262,7 +263,7 @@ label {
   padding: 0 8px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .tab:hover {
@@ -367,6 +368,10 @@ label {
 
 .today-card .button-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.today-card .button-row button {
+  font-size: 16px;
 }
 
 .button-grid {
@@ -510,7 +515,7 @@ label {
   min-height: 36px;
   border-radius: 9px;
   padding: 0 10px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .study-card {
