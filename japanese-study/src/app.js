@@ -2129,17 +2129,14 @@ function renderSentenceList() {
         <div>
           <div class="sentence-title-row">
             <span class="sentence-number">#${globalIndex || index + 1}</span>
+            <button class="small-button sentence-list-speak" type="button" data-speak="${sentence.id}">듣기</button>
             ${sentence.category === "AI" ? `<span class="ai-badge">AI</span>` : ""}
           </div>
           <strong>${escapeHtml(cleanInputPart(sentence.jp))}</strong>
           <div class="sentence-meta">
             ${escapeHtml(cleanInputPart(sentence.reading))}<br />
-            ${escapeHtml(cleanInputPart(sentence.meaning))}<br />
-            ${escapeHtml(sentenceStyleLabel(sentence.style))}
+            ${escapeHtml(cleanInputPart(sentence.meaning))}
           </div>
-        </div>
-        <div class="sentence-actions">
-          <button class="small-button" type="button" data-speak="${sentence.id}">듣기</button>
         </div>
       </article>
     `;
@@ -2151,14 +2148,6 @@ function renderSentenceList() {
       speakSentence(sentence);
     });
   });
-}
-
-function sentenceStyleLabel(style) {
-  const normalized = normalizeSentenceStyle(style);
-  const jp = normalized.jpStyle === "polite" ? "일본어 존댓말" : "일본어 반말";
-  const kr = normalized.krStyle === "polite" ? "한국어 존댓말" : "한국어 반말";
-  const mode = normalized.translationMode === "natural" ? "자연번역" : "직역";
-  return `${jp} · ${kr} · ${mode}`;
 }
 
 function setKanaMode(mode) {
