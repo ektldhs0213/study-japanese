@@ -1916,11 +1916,9 @@ function renderWordStudyList() {
   elements.wordStudyList.innerHTML = studyWords.map((word, index) => `
     <article class="word-study-list-item">
       <span class="word-list-number">${index + 1}</span>
-      <div>
-        <strong lang="ja">${escapeHtml(word.jp)}</strong>
-        <p>${escapeHtml(word.reading)} · ${escapeHtml(word.meaning)}</p>
-        <time datetime="${escapeHtml(word.studyDate || "")}">${escapeHtml(word.studyDate || "학습일 없음")}</time>
-      </div>
+      <strong lang="ja">${escapeHtml(word.jp)}</strong>
+      <span class="word-study-list-meta">${escapeHtml(word.reading)} · ${escapeHtml(word.meaning)}</span>
+      <time datetime="${escapeHtml(word.studyDate || "")}">${escapeHtml(word.studyDate || "학습일 없음")}</time>
     </article>
   `).join("");
 }
