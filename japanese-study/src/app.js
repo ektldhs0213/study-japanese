@@ -293,6 +293,10 @@ async function syncPendingWords() {
       results.forEach((result) => {
         if (result.status === "fulfilled") {
           saved += 1;
+          const syncedWord = cleanStoredWord({ ...result.value, syncStatus: "synced" });
+          const stateIndex = state.words.findIndex((word) => isSameWord(word, syncedWord));
+          if (stateIndex >= 0) state.words[stateIndex] = syncedWord;
+          else state.words.push(syncedWord);
         } else {
           failed += 1;
           firstError ||= shortenMessage(result.reason?.message);
@@ -306,9 +310,13 @@ async function syncPendingWords() {
     elements.bulkAddBtn.textContent = "여러 단어 저장";
   }
 
-  await loadWordsFromSupabase();
+  generateSentences();
+  renderAll();
+  const refreshed = await loadWordsFromSupabase();
   if (failed > 0) {
     showToast(`DB 저장 ${saved}개 성공 · ${failed}개 실패${firstError ? ` (${firstError})` : ""}`);
+  } else if (!refreshed) {
+    showToast(`DB 저장 ${saved}개 성공 · 재조회는 잠시 후 다시 시도해 주세요.`);
   } else {
     showToast(`Supabase DB에 ${saved}개 단어를 저장했습니다.`);
   }
