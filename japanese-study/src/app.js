@@ -27,7 +27,8 @@ const state = {
   todayIndex: 0,
   showMeaning: true,
   showReading: true,
-  deferredInstallPrompt: null
+  deferredInstallPrompt: null,
+  remoteSyncing: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -145,7 +146,7 @@ function getKanaList(mode = state.kanaMode) {
   }));
 }
 
-function init() {
+async function init() {
   loadData();
   syncGenerationOptionInputs();
   setDefaultWordDateInputs();
@@ -154,6 +155,7 @@ function init() {
   bindEvents();
   renderAll();
   registerServiceWorker();
+  await loadWordsFromSupabase();
 }
 
 function loadData() {
@@ -179,6 +181,69 @@ function saveWords() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.words));
 }
 
+async function loadWordsFromSupabase() {
+  if (!window.JapaneseService?.isRemoteReady() || state.remoteSyncing) return false;
+
+  state.remoteSyncing = true;
+  try {
+    const localPending = state.words.filter((word) => word.syncStatus !== "synced");
+    for (const word of localPending) {
+      const synced = await syncWordToSupabase(word, { silent: true });
+      if (!synced) throw new Error("대기 중인 로컬 단어를 Supabase에 동기화하지 못했습니다.");
+    }
+
+    const remoteWords = await window.JapaneseService.listWords();
+    state.words = remoteWords.map(cleanStoredWord).filter(Boolean);
+    saveWords();
+    generateSentences();
+    renderAll();
+    setGeminiKeyStatus(`Supabase 연결됨 · 공용 단어 ${state.words.length}개`);
+    return true;
+  } catch (error) {
+    setGeminiKeyStatus(`Supabase 조회 실패 · localStorage 사용 중 (${shortenMessage(error.message)})`);
+    return false;
+  } finally {
+    state.remoteSyncing = false;
+  }
+}
+
+async function syncWordToSupabase(word, options = {}) {
+  if (!window.JapaneseService?.isRemoteReady() || !navigator.onLine) {
+    word.syncStatus = "pending";
+    saveWords();
+    if (!options.silent) showToast("로컬 저장 완료 · 온라인 연결 후 Supabase에 동기화됩니다.");
+    return false;
+  }
+
+  try {
+    const remoteWord = await window.JapaneseService.saveWord(word);
+    const syncedWord = cleanStoredWord({ ...remoteWord, syncStatus: "synced" });
+    const index = state.words.findIndex((item) => isSameWord(item, word));
+    if (index >= 0) state.words[index] = syncedWord;
+    saveWords();
+    renderWordList();
+    if (!options.silent) showToast("로컬 및 Supabase 저장 완료");
+    return true;
+  } catch (error) {
+    word.syncStatus = "pending";
+    saveWords();
+    renderWordList();
+    if (!options.silent) {
+      showToast(`로컬 저장 완료 · Supabase 저장 실패 (${shortenMessage(error.message)})`);
+    }
+    return false;
+  }
+}
+
+async function syncPendingWords() {
+  if (state.remoteSyncing || !navigator.onLine) return;
+  const pendingWords = state.words.filter((word) => word.syncStatus !== "synced");
+  for (const word of pendingWords) {
+    await syncWordToSupabase(word, { silent: true });
+  }
+  await loadWordsFromSupabase();
+}
+
 function saveMarks() {
   localStorage.setItem(MARKS_KEY, JSON.stringify(state.marks));
 }
@@ -202,9 +267,9 @@ function bindEvents() {
     tab.addEventListener("click", () => switchTab(tab.dataset.tab));
   });
 
-  elements.wordForm.addEventListener("submit", (event) => {
+  elements.wordForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    addWord({
+    await addWord({
       jp: elements.jpInput.value,
       reading: elements.readingInput.value,
       meaning: elements.meaningInput.value,
@@ -262,6 +327,7 @@ function bindEvents() {
   elements.testGeminiKeyBtn.addEventListener("click", testGeminiApiKey);
   elements.clearGeminiKeyBtn.addEventListener("click", clearGeminiApiKey);
   elements.installBtn.addEventListener("click", installPwa);
+  window.addEventListener("online", syncPendingWords);
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
@@ -438,7 +504,7 @@ const TRANSLATION_OVERRIDES = {
   "たいへんです": { dictionary: "힘들다, 큰일이다", natural: "힘들다", polite: "힘듭니다", plain: "힘들어" }
 };
 
-function addWord(rawWord) {
+async function addWord(rawWord) {
   if (cleanInputPart(rawWord.pos) && !normalizePos(cleanInputPart(rawWord.pos))) {
     showToast("허용된 pos만 입력해 주세요.");
     return;
@@ -451,6 +517,8 @@ function addWord(rawWord) {
 
   const result = upsertWord(word, state.words.length);
   afterWordsChanged(result === "updated" ? "기존 단어에 뜻과 태그를 병합했습니다." : "단어를 저장했습니다.");
+  const savedWord = state.words.find((item) => isSameWord(item, word));
+  if (savedWord) await syncWordToSupabase(savedWord);
 }
 
 function normalizeWord(rawWord) {
@@ -631,7 +699,8 @@ function migrateWord(word) {
     grammar,
     generation,
     legacyCategory,
-    category: legacyCategory
+    category: legacyCategory,
+    syncStatus: word.syncStatus || "pending"
   };
 }
 
@@ -821,7 +890,7 @@ function sortSemanticTags(tags) {
   });
 }
 
-function addBulkWords() {
+async function addBulkWords() {
   const lines = elements.bulkInput.value.split("\n").map((line) => line.trim()).filter(Boolean);
   const bulkDate = elements.bulkDateInput.value || todayDateKey();
   let currentCategory = "미분류";
@@ -853,6 +922,7 @@ function addBulkWords() {
 
   elements.bulkInput.value = "";
   afterWordsChanged(`${added}개 저장, ${updated}개 업데이트했습니다.`);
+  await syncPendingWords();
 }
 
 function upsertWord(word, addIndex) {
@@ -870,12 +940,14 @@ function upsertWord(word, addIndex) {
     existing.legacyCategory = word.legacyCategory;
     existing.category = word.legacyCategory;
     existing.translation = normalizeTranslation(null, existing);
+    existing.syncStatus = "pending";
     return "updated";
   }
 
   state.words.push({
     ...word,
-    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${addIndex}`
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${addIndex}`,
+    syncStatus: word.syncStatus || "pending"
   });
   return "added";
 }
@@ -898,12 +970,21 @@ function mergeCommaValues(first, second) {
   ).join(", ");
 }
 
-function deleteWord(wordId) {
+async function deleteWord(wordId) {
+  const deletedWord = state.words.find((word) => word.id === wordId);
   state.words = state.words.filter((word) => word.id !== wordId);
   afterWordsChanged("단어를 삭제했습니다.");
+  if (deletedWord?.syncStatus === "synced" && window.JapaneseService?.isRemoteReady() && navigator.onLine) {
+    try {
+      await window.JapaneseService.deleteWord(wordId);
+      showToast("로컬 및 Supabase에서 삭제했습니다.");
+    } catch (error) {
+      showToast(`로컬 삭제 완료 · Supabase 삭제 실패 (${shortenMessage(error.message)})`);
+    }
+  }
 }
 
-function clearWordsOnly() {
+async function clearWordsOnly() {
   if (state.words.length === 0) {
     showToast("삭제할 단어가 없습니다.");
     return;
@@ -924,6 +1005,14 @@ function clearWordsOnly() {
   generateSentences();
   renderAll();
   showToast("입력한 단어를 모두 삭제했습니다.");
+  if (window.JapaneseService?.isRemoteReady() && navigator.onLine) {
+    try {
+      await window.JapaneseService.deleteAllWords();
+      showToast("공용 단어를 로컬 및 Supabase에서 모두 삭제했습니다.");
+    } catch (error) {
+      showToast(`로컬 삭제 완료 · Supabase 전체 삭제 실패 (${shortenMessage(error.message)})`);
+    }
+  }
 }
 
 function afterWordsChanged(message) {
@@ -1732,7 +1821,7 @@ function renderWordList() {
       </div>
       <div class="word-meta">
         ${escapeHtml(word.reading)} · ${escapeHtml(word.meaning)} · 입력일 ${escapeHtml(word.createdDate)}<br />
-        pos: ${escapeHtml(word.pos)} · tags: ${escapeHtml(word.semanticTags.join(", ") || "-")} · 기존분류: ${escapeHtml(word.legacyCategory)}
+        pos: ${escapeHtml(word.pos)} · tags: ${escapeHtml(word.semanticTags.join(", ") || "-")} · 기존분류: ${escapeHtml(word.legacyCategory)} · ${word.syncStatus === "synced" ? "Supabase" : "동기화 대기"}
       </div>
     </div>
   `).join("");
@@ -2230,7 +2319,7 @@ async function testGeminiApiKey() {
   try {
     await window.JapaneseService.testConnection();
     setAiStatus("Supabase 연결 테스트 성공.");
-    setGeminiKeyStatus("Supabase 연결 성공. 로그인 후 개인 데이터를 동기화할 수 있습니다.");
+    setGeminiKeyStatus("Supabase 연결 성공. 공용 단어장을 조회하고 저장할 수 있습니다.");
     showToast("Supabase 연결이 정상입니다.");
   } catch (error) {
     const message = getAiErrorMessage(error);

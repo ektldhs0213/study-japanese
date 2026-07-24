@@ -10,8 +10,7 @@ Netlify 및 OCI 전용 구성을 제거하고 Cloudflare Pages와 Supabase를 �
 .
 ├─ japanese-study/
 │  ├─ src/
-│  │  ├─ auth/                 # Supabase Auth provider
-│  │  ├─ lib/                  # Supabase REST/Auth client
+│  │  ├─ lib/                  # Supabase anon REST client
 │  │  ├─ services/             # 일본어 데이터 접근 계층
 │  │  ├─ app.js                # 기존 일본어 PWA 기능
 │  │  ├─ index.html
@@ -50,9 +49,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY`, DB 비밀번호, Gemini API 키는 브라우저 빌드에
-절대 넣지 않습니다. anon/publishable key는 RLS와 함께 브라우저에서
-사용하도록 설계된 공개 키이며, 사용자 데이터 접근은 로그인 JWT와 RLS로
-제한됩니다.
+절대 넣지 않습니다. 일본어 단어장은 로그인 없는 공용 데이터이므로
+anon/publishable key와 공개 단어장 전용 RLS 정책을 사용합니다.
 
 ## 로컬 실행
 
@@ -133,7 +131,7 @@ Build output directory: dist
 supabase/migrations/202607240001_initial_schema.sql
 ```
 
-3. Authentication에서 사용할 로그인 방식을 활성화합니다.
+3. 기존 Auth 기반 DB라면 `202607240003_public_japanese_schema.sql`을 실행합니다.
 4. Project URL과 publishable/anon key를 Cloudflare Pages에 등록합니다.
 
 Migration에는 다음이 포함됩니다.
@@ -148,8 +146,18 @@ bg_matches
 bg_scores
 ```
 
-모든 테이블은 Row Level Security가 활성화되며 로그인한 사용자는 자신의
-행만 읽고 변경할 수 있습니다.
+모든 테이블은 Row Level Security가 활성화됩니다. 일본어 서비스의
+`jp_words`, `jp_sentences`, `jp_history`는 로그인 없는 운영을 위해 anon
+조회와 추가를 허용합니다. 보드게임 테이블은 기존 authenticated 정책을
+유지합니다.
+
+일본어 테이블의 운영 컬럼:
+
+```text
+jp_words: id, japanese, reading, meaning, pos, semantic_tags, created_at
+jp_sentences: id, japanese, reading, meaning, created_at
+jp_history: id, japanese, action, created_at
+```
 
 ## Gemini AI 문장 생성
 
@@ -174,13 +182,12 @@ supabase functions deploy generate-japanese-sentences
 UI
   -> JapaneseService / BoardgameService
   -> SupabaseClient
-  -> Supabase REST, Auth, Edge Functions
+  -> Supabase REST, Edge Functions
 ```
 
 `localStorage`는 일본어 PWA의 오프라인 사용과 기존 데이터 보존을 위해
-유지됩니다. Supabase는 로그인 사용자 간 기기 동기화를 위한 운영 저장소로
-준비되어 있습니다. 향후 자동 동기화를 추가하더라도 UI 코드는 서비스
-계층만 호출하면 됩니다.
+유지됩니다. 온라인에서는 Supabase 공용 단어를 우선 조회하고, 오프라인
+입력은 localStorage에 대기시킨 뒤 연결이 복구되면 자동 동기화합니다.
 
 ## PWA 확인
 
@@ -201,5 +208,5 @@ _redirects
 
 기존 단어와 문장은 삭제되지 않습니다. 브라우저의 localStorage 데이터는
 그대로 유지되며 기존 JSON 내보내기/가져오기도 계속 사용할 수 있습니다.
-Supabase 로그인을 연결한 뒤 서비스 계층을 이용해 원격 DB로 순차 동기화할
-수 있는 구조입니다.
+처음 온라인으로 실행하면 기존 localStorage 단어도 Supabase 공용 단어장에
+순차 동기화됩니다.

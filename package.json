@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run build:japanese && npm run build:boardgame",
-    "build:japanese": "npm --prefix japanese-study run build",
-    "build:boardgame": "npm --prefix boardgame-score run build",
-    "dev:japanese": "npm --prefix japanese-study run dev",
-    "dev:boardgame": "npm --prefix boardgame-score run dev"
+    "build": "node japanese-study/scripts/build.mjs && node boardgame-score/scripts/build.mjs",
+    "build:japanese": "node japanese-study/scripts/build.mjs",
+    "build:boardgame": "node boardgame-score/scripts/build.mjs",
+    "dev:japanese": "node japanese-study/scripts/dev.mjs",
+    "dev:boardgame": "node boardgame-score/scripts/dev.mjs"
   }
 }

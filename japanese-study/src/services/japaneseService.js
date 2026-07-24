@@ -5,24 +5,59 @@
     return encodeURIComponent(value);
   }
 
+  function toAppWord(row) {
+    return {
+      id: row.id,
+      jp: row.japanese,
+      reading: row.reading,
+      meaning: row.meaning,
+      pos: row.pos,
+      semanticTags: Array.isArray(row.semantic_tags) ? row.semantic_tags : [],
+      createdAt: row.created_at,
+      createdDate: String(row.created_at || "").slice(0, 10),
+      syncStatus: "synced"
+    };
+  }
+
+  function toAppSentence(row) {
+    return {
+      id: row.id,
+      jp: row.japanese,
+      reading: row.reading,
+      meaning: row.meaning,
+      createdAt: row.created_at
+    };
+  }
+
   global.JapaneseService = Object.freeze({
     isRemoteReady: () => global.SupabaseClient.isConfigured(),
-    listWords() {
-      return global.SupabaseClient.rest("jp_words", "?select=*&order=created_at.desc");
+    async listWords() {
+      const rows = await global.SupabaseClient.rest("jp_words", "?select=*&order=created_at.desc");
+      return rows.map(toAppWord);
     },
-    saveWord(word) {
+    async saveWord(word) {
       const record = {
         japanese: word.jp || word.japanese,
         reading: word.reading,
         meaning: word.meaning,
         pos: word.pos || word.category,
-        semantic_tags: word.semanticTags || word.semantic_tags || []
+        semantic_tags: word.semanticTags || word.semantic_tags || [],
+        created_at: word.createdAt || (word.createdDate ? `${word.createdDate}T00:00:00.000Z` : new Date().toISOString())
       };
-      return global.SupabaseClient.rest("jp_words?on_conflict=user_id,japanese,pos", {
+      const japanese = encode(record.japanese);
+      const pos = encode(record.pos);
+      const existingRows = await global.SupabaseClient.rest(
+        "jp_words",
+        `?select=*&japanese=eq.${japanese}&pos=eq.${pos}&limit=1`
+      );
+      if (existingRows.length > 0) return toAppWord(existingRows[0]);
+
+      const rows = await global.SupabaseClient.rest("jp_words", {
         method: "POST",
-        headers: { ...jsonHeaders, Prefer: "resolution=merge-duplicates,return=representation" },
+        headers: jsonHeaders,
         body: JSON.stringify(record)
       });
+      return toAppWord(rows[0]);
     },
     deleteWord(id) {
       return global.SupabaseClient.rest(`jp_words?id=eq.${encode(id)}`, {
@@ -30,25 +65,33 @@
         headers: jsonHeaders
       });
     },
-    listSentences() {
-      return global.SupabaseClient.rest("jp_sentences", "?select=*&order=created_at.desc");
+    deleteAllWords() {
+      return global.SupabaseClient.rest("jp_words?id=not.is.null", {
+        method: "DELETE",
+        headers: jsonHeaders
+      });
     },
-    saveSentence(sentence) {
-      return global.SupabaseClient.rest("jp_sentences", {
+    async listSentences() {
+      const rows = await global.SupabaseClient.rest("jp_sentences", "?select=*&order=created_at.desc");
+      return rows.map(toAppSentence);
+    },
+    async saveSentence(sentence) {
+      const rows = await global.SupabaseClient.rest("jp_sentences", {
         method: "POST",
         headers: jsonHeaders,
         body: JSON.stringify({
           japanese: sentence.jp || sentence.japanese,
           reading: sentence.reading,
-          meaning: sentence.meaning,
-          source: sentence.source || "local"
+          meaning: sentence.meaning
         })
       });
+      return toAppSentence(rows[0]);
     },
-    recordStudy(wordId, result = "studied") {
+    recordStudy(japanese, action = "studied") {
       return global.SupabaseClient.rest("jp_history", {
         method: "POST",
-        body: JSON.stringify({ word_id: wordId, result })
+        headers: jsonHeaders,
+        body: JSON.stringify({ japanese, action })
       });
     },
     testConnection() {
@@ -56,12 +99,11 @@
     },
     async generateSentences(payload) {
       const config = global.APP_CONFIG || {};
-      const session = global.SupabaseClient.getSession();
       const response = await fetch(`${String(config.SUPABASE_URL).replace(/\/+$/, "")}/functions/v1/generate-japanese-sentences`, {
         method: "POST",
         headers: {
           apikey: config.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${session?.access_token || config.SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${config.SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
