@@ -347,6 +347,20 @@ label {
   grid-template-columns: repeat(2, 1fr);
 }
 
+.word-study-actions {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.word-study-actions > button:nth-child(-n + 3) {
+  grid-column: span 2;
+}
+
+.word-study-actions > button:nth-child(n + 4) {
+  grid-column: span 3;
+  min-height: 50px;
+  font-size: 14px;
+}
+
 .ghost-button {
   border: 1px solid var(--line);
   background: var(--surface-strong);
@@ -791,6 +805,16 @@ label {
 
   .button-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .word-study-actions {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .word-study-actions > button:nth-child(n) {
+    grid-column: auto;
+    min-height: 44px;
+    font-size: inherit;
   }
 
   .range-label {

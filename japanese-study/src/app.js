@@ -73,7 +73,6 @@ const elements = {
   randomWordStudyBtn: $("#randomWordStudyBtn"),
   toggleWordStudyAnswerBtn: $("#toggleWordStudyAnswerBtn"),
   speakWordStudyBtn: $("#speakWordStudyBtn"),
-  shuffleWordStudyBtn: $("#shuffleWordStudyBtn"),
   kanaProgress: $("#kanaProgress"),
   hiraganaModeBtn: $("#hiraganaModeBtn"),
   katakanaModeBtn: $("#katakanaModeBtn"),
@@ -360,7 +359,6 @@ function bindEvents() {
   elements.randomWordStudyBtn.addEventListener("click", showRandomWordStudy);
   elements.toggleWordStudyAnswerBtn.addEventListener("click", toggleWordStudyAnswer);
   elements.speakWordStudyBtn.addEventListener("click", () => speakText(getCurrentWordStudy()?.jp));
-  elements.shuffleWordStudyBtn.addEventListener("click", shuffleWordStudy);
   elements.wordStudyAllFilterBtn.addEventListener("click", () => setWordStudyFilterMode("all"));
   elements.wordStudyDatesFilterBtn.addEventListener("click", () => setWordStudyFilterMode("dates"));
   elements.wordStudyRangeFilterBtn.addEventListener("click", () => setWordStudyFilterMode("range"));
@@ -1962,16 +1960,6 @@ function toggleWordStudyAnswer() {
   if (getWordStudyWords().length === 0) return;
   state.wordStudyShowAnswer = !state.wordStudyShowAnswer;
   renderWordStudy();
-}
-
-function shuffleWordStudy() {
-  if (getWordStudyWords().length === 0) return;
-  state.words = [...state.words].sort(() => Math.random() - 0.5);
-  state.wordStudyIndex = 0;
-  state.wordStudyShowAnswer = false;
-  saveWords();
-  renderWordStudy();
-  showToast("단어 순서를 섞었습니다.");
 }
 
 function getWordStudyWords() {
