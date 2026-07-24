@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>일본어 문장 카드</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="style.css?v=202607250256" />
+    <link rel="stylesheet" href="style.css?v=202607250259" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">개인 일본어 학습 PWA</p>
         <h1>일본어 문장 카드</h1>
-        <p class="source-date">소스날짜 : 07월25일 02시 56분</p>
+        <p class="source-date">소스날짜 : 07월25일 02시 59분</p>
       </div>
       <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
     </header>
@@ -72,6 +72,8 @@
         </article>
 
         <div class="word-study-filter" aria-label="단어 입력 날짜 필터">
+          <p id="wordStudyDataStatus" class="connection-status">Supabase 단어를 불러오는 중입니다.</p>
+
           <div class="segmented-control filter-mode-control">
             <button id="wordStudyAllFilterBtn" class="active" type="button">전체</button>
             <button id="wordStudyDatesFilterBtn" type="button">날짜 선택</button>
@@ -99,7 +101,6 @@
             </label>
           </div>
 
-          <p id="wordStudyDataStatus" class="connection-status">Supabase 단어를 불러오는 중입니다.</p>
         </div>
 
         <div class="button-grid word-study-actions">
@@ -251,8 +252,8 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="config.js"></script>
-    <script src="lib/supabase.js?v=202607250256"></script>
-    <script src="services/japaneseService.js?v=202607250256"></script>
-    <script src="app.js?v=202607250256"></script>
+    <script src="lib/supabase.js?v=202607250259"></script>
+    <script src="services/japaneseService.js?v=202607250259"></script>
+    <script src="app.js?v=202607250259"></script>
   </body>
 </html>
