@@ -33,7 +33,8 @@ const state = {
   showReading: false,
   deferredInstallPrompt: null,
   remoteSyncing: false,
-  wordSaving: false
+  wordSaving: false,
+  wordDataLoaded: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -205,6 +206,7 @@ async function loadWordsFromSupabase() {
     }
 
     state.words = remoteWords;
+    state.wordDataLoaded = true;
     saveWords();
     saveAiSentences();
     generateSentences();
@@ -213,9 +215,7 @@ async function loadWordsFromSupabase() {
       `Supabase 조회 성공 · DB 단어 ${remoteWords.length}개 · DB 문장 ${state.aiSentences.length}개`
       + `${missingStudyDateCount ? ` · study_date 없는 단어 ${missingStudyDateCount}개` : ""}${sentenceWarning}`
     );
-    elements.wordStudyDataStatus.textContent = missingStudyDateCount
-      ? `DB 단어 ${remoteWords.length}개 조회 · study_date 없는 단어 ${missingStudyDateCount}개`
-      : `DB 단어 ${remoteWords.length}개를 불러왔습니다.`;
+    renderWordStudyDataStatus(missingStudyDateCount);
     return true;
   } catch (error) {
     state.words = state.words.filter((word) => word.syncStatus === "synced");
@@ -2004,7 +2004,30 @@ function renderWordStudyFilters() {
   elements.wordStudyRangeFields.classList.toggle("hidden", state.wordStudyFilterMode !== "range");
   elements.wordStudyStartDate.value = state.wordStudyStartDate;
   elements.wordStudyEndDate.value = state.wordStudyEndDate;
+  renderWordStudyDataStatus();
+}
 
+function renderWordStudyDataStatus(missingStudyDateCount = 0) {
+  if (!state.wordDataLoaded) return;
+
+  if (state.wordStudyFilterMode === "dates") {
+    const filteredCount = getWordStudyWords().length;
+    elements.wordStudyDataStatus.textContent =
+      `${state.wordStudySelectedDates.length}개 날짜 · 단어 ${filteredCount}개를 불러왔습니다.`;
+    return;
+  }
+
+  if (state.wordStudyFilterMode === "range") {
+    const filteredWords = getWordStudyWords();
+    const dateCount = new Set(filteredWords.map(getWordStudyDate).filter(Boolean)).size;
+    elements.wordStudyDataStatus.textContent =
+      `${dateCount}개 날짜 · 단어 ${filteredWords.length}개를 불러왔습니다.`;
+    return;
+  }
+
+  elements.wordStudyDataStatus.textContent = missingStudyDateCount
+    ? `DB 단어 ${state.words.length}개 조회 · study_date 없는 단어 ${missingStudyDateCount}개`
+    : `DB 단어 ${state.words.length}개를 불러왔습니다.`;
 }
 
 function toggleWordStudyDateList() {

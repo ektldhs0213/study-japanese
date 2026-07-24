@@ -263,7 +263,7 @@ label {
   padding: 0 8px;
   background: var(--surface-strong);
   color: var(--text);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .tab:hover {
@@ -312,6 +312,7 @@ label {
   background: var(--soft);
   padding: 10px 12px;
   color: var(--text);
+  font-size: 15px;
 }
 
 .word-form {
@@ -884,6 +885,13 @@ label {
 }
 
 @media (min-width: 760px) {
+  .panel button,
+  .panel .file-button,
+  #managePanel button,
+  #managePanel .file-button {
+    font-size: 16px;
+  }
+
   .app-header {
     padding-top: 18px;
     padding-bottom: 18px;
@@ -1016,7 +1024,7 @@ label {
     min-width: 0;
     min-height: 52px;
     padding: 0 3px;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1.15;
     overflow-wrap: anywhere;
   }
