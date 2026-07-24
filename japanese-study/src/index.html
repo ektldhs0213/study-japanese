@@ -6,14 +6,14 @@
     <meta name="theme-color" content="#f5f5f7" />
     <title>일본어 문장 카드</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="style.css?v=202607250208" />
+    <link rel="stylesheet" href="style.css?v=202607250214" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">개인 일본어 학습 PWA</p>
         <h1>일본어 문장 카드</h1>
-        <p class="source-date">소스날짜 : 07월25일 02시 08분</p>
+        <p class="source-date">소스날짜 : 07월25일 02시 14분</p>
       </div>
       <button id="installBtn" class="icon-button hidden" type="button" title="앱 설치">＋</button>
     </header>
@@ -48,7 +48,7 @@
       <section id="wordsPanel" class="panel active" aria-label="단어장">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">단어장</p>
+            <h2>단어장</h2>
           </div>
         </div>
 
@@ -65,7 +65,7 @@
       <section id="wordStudyPanel" class="panel" aria-label="단어 암기">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">단어 암기</p>
+            <h2>단어 암기</h2>
           </div>
           <span id="wordStudyPosition" class="count-badge">0 / 0</span>
         </div>
@@ -128,7 +128,7 @@
       <section id="kanaPanel" class="panel" aria-label="히라가나와 가타카나">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">히라가나 · 가타카나</p>
+            <h2>히라가나 · 가타카나</h2>
           </div>
           <span id="kanaProgress" class="count-badge">0 / 0</span>
         </div>
@@ -222,12 +222,6 @@
       </section>
 
       <section id="managePanel" class="panel" aria-label="관리">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">관리</p>
-          </div>
-        </div>
-
         <div class="management-section api-key-box">
           <div>
             <h3>프로젝트 연결 확인</h3>
@@ -263,8 +257,8 @@
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="config.js"></script>
-    <script src="lib/supabase.js?v=202607250208"></script>
-    <script src="services/japaneseService.js?v=202607250208"></script>
-    <script src="app.js?v=202607250208"></script>
+    <script src="lib/supabase.js?v=202607250214"></script>
+    <script src="services/japaneseService.js?v=202607250214"></script>
+    <script src="app.js?v=202607250214"></script>
   </body>
 </html>

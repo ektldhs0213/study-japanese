@@ -353,6 +353,7 @@ label {
   border: 1px solid var(--line);
   background: var(--surface-strong);
   color: var(--text);
+  font-size: 12px;
 }
 
 #managePanel button:hover,
@@ -927,7 +928,7 @@ label {
 
   .supabase-actions button {
     padding-inline: 3px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .app-header {
@@ -956,7 +957,7 @@ label {
     min-height: 42px;
     border-radius: 9px;
     padding: 0 10px;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .kana-grid {
