@@ -133,8 +133,9 @@ supabase/migrations/202607240001_initial_schema.sql
 
 3. 기존 Auth 기반 DB라면 `202607240003_public_japanese_schema.sql`을 실행합니다.
 4. 기존 단어의 입력 날짜와 내용을 갱신하려면 `202607240004_public_jp_word_updates.sql`을 실행합니다.
-5. `202607250002_jp_word_canonical_identity.sql`을 실행해 중복을 `정규화된 일본어 + pos` 기준으로 통합합니다. 같은 단어의 뜻과 태그는 합쳐지고 최신 입력 날짜가 유지됩니다.
-6. Project URL과 publishable/anon key를 Cloudflare Pages에 등록합니다.
+5. `202607250002_jp_word_canonical_identity.sql`을 실행해 중복을 `정규화된 일본어 + pos` 기준으로 통합합니다. 같은 단어의 뜻과 태그는 합쳐집니다.
+6. `202607250003_jp_word_study_date.sql`을 실행해 사용자가 선택한 입력 날짜를 `study_date`로 별도 관리합니다.
+7. Project URL과 publishable/anon key를 Cloudflare Pages에 등록합니다.
 
 Migration에는 다음이 포함됩니다.
 
@@ -161,7 +162,7 @@ Supabase 데이터는 삭제하지 않습니다.
 일본어 테이블의 운영 컬럼:
 
 ```text
-jp_words: id, japanese, reading, meaning, pos, semantic_tags, created_at
+jp_words: id, japanese, reading, meaning, pos, semantic_tags, study_date, created_at
 jp_sentences: id, japanese, reading, meaning, created_at
 jp_history: id, japanese, action, created_at
 ```

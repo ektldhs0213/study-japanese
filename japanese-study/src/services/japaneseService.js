@@ -15,7 +15,7 @@
       pos: row.pos,
       semanticTags: Array.isArray(row.semantic_tags) ? row.semantic_tags : [],
       createdAt: row.created_at,
-      createdDate: String(row.created_at || "").slice(0, 10),
+      createdDate: String(row.study_date || row.created_at || "").slice(0, 10),
       syncStatus: "synced"
     };
   }
@@ -33,7 +33,7 @@
   global.JapaneseService = Object.freeze({
     isRemoteReady: () => global.SupabaseClient.isConfigured(),
     async listWords() {
-      const rows = await global.SupabaseClient.rest("jp_words", "?select=*&order=created_at.desc");
+      const rows = await global.SupabaseClient.rest("jp_words", "?select=*&order=study_date.desc,created_at.desc");
       return rows.map(toAppWord);
     },
     async saveWord(word) {
@@ -43,16 +43,18 @@
         meaning: word.meaning,
         pos: String(word.pos || word.category || "").trim().toLowerCase(),
         semantic_tags: word.semanticTags || word.semantic_tags || [],
-        created_at: word.createdDate
-          ? `${word.createdDate}T00:00:00.000Z`
-          : word.createdAt || new Date().toISOString()
+        study_date: word.createdDate || new Date().toISOString().slice(0, 10)
       };
       const rows = await global.SupabaseClient.rest("jp_words", "?on_conflict=japanese,pos&select=*", {
         method: "POST",
         headers: { Prefer: "resolution=merge-duplicates,return=representation" },
         body: JSON.stringify(record)
       });
-      return toAppWord(rows[0]);
+      const savedWord = toAppWord(rows[0]);
+      if (savedWord.createdDate !== record.study_date) {
+        throw new Error(`입력 날짜 저장 불일치 (${record.study_date} → ${savedWord.createdDate || "없음"})`);
+      }
+      return savedWord;
     },
     async listSentences() {
       const rows = await global.SupabaseClient.rest("jp_sentences", "?select=*&order=created_at.desc");
