@@ -34,8 +34,10 @@
   global.JapaneseService = Object.freeze({
     isRemoteReady: () => global.SupabaseClient.isConfigured(),
     async listWords() {
-      const rows = await global.SupabaseClient.rest("jp_words", "?select=*&order=study_date.desc,created_at.desc");
-      return rows.map(toAppWord);
+      const rows = await global.SupabaseClient.rest("jp_words", "?select=*&order=created_at.desc");
+      return rows
+        .map(toAppWord)
+        .sort((first, second) => String(second.studyDate).localeCompare(String(first.studyDate)));
     },
     async saveWord(word) {
       const record = {

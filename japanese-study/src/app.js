@@ -63,6 +63,7 @@ const elements = {
   wordStudyStartDate: $("#wordStudyStartDate"),
   wordStudyEndDate: $("#wordStudyEndDate"),
   wordStudyFilterSummary: $("#wordStudyFilterSummary"),
+  wordStudyDataStatus: $("#wordStudyDataStatus"),
   wordStudyListCount: $("#wordStudyListCount"),
   wordStudyList: $("#wordStudyList"),
   prevWordStudyBtn: $("#prevWordStudyBtn"),
@@ -194,6 +195,7 @@ async function loadWordsFromSupabase() {
     const remoteWords = deduplicateWords(wordRows
       .map(cleanStoredWord)
       .filter(Boolean));
+    const missingStudyDateCount = remoteWords.filter((word) => !word.studyDate).length;
     let sentenceWarning = "";
 
     try {
@@ -212,8 +214,12 @@ async function loadWordsFromSupabase() {
     generateSentences();
     renderAll();
     setGeminiKeyStatus(
-      `Supabase 조회 성공 · DB 단어 ${remoteWords.length}개 · DB 문장 ${state.aiSentences.length}개${sentenceWarning}`
+      `Supabase 조회 성공 · DB 단어 ${remoteWords.length}개 · DB 문장 ${state.aiSentences.length}개`
+      + `${missingStudyDateCount ? ` · study_date 없는 단어 ${missingStudyDateCount}개` : ""}${sentenceWarning}`
     );
+    elements.wordStudyDataStatus.textContent = missingStudyDateCount
+      ? `DB 단어 ${remoteWords.length}개 조회 · study_date 없는 단어 ${missingStudyDateCount}개`
+      : `DB 단어 ${remoteWords.length}개를 불러왔습니다.`;
     return true;
   } catch (error) {
     state.words = state.words.filter((word) => word.syncStatus === "synced");
@@ -221,6 +227,7 @@ async function loadWordsFromSupabase() {
     generateSentences();
     renderAll();
     setGeminiKeyStatus(`Supabase 조회 실패 · DB 데이터를 불러오지 못했습니다. (${shortenMessage(error.message)})`);
+    elements.wordStudyDataStatus.textContent = `DB 조회 실패: ${shortenMessage(error.message)}`;
     return false;
   } finally {
     state.remoteSyncing = false;
@@ -760,7 +767,7 @@ function migrateWord(word) {
     reading: cleanInputPart(word.reading),
     meaning: cleanInputPart(word.meaning),
     createdAt,
-    studyDate: createdDate,
+    studyDate: requestedDate,
     createdDate,
     translation,
     pos,
