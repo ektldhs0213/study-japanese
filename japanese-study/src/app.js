@@ -403,6 +403,15 @@ function bindEvents() {
 }
 
 function switchTab(tabName) {
+  const tabsContainer = $(".tabs");
+  if (
+    tabsContainer
+    && window.matchMedia("(max-width: 480px)").matches
+    && window.scrollY > tabsContainer.offsetTop
+  ) {
+    window.scrollTo({ top: Math.max(0, tabsContainer.offsetTop - 8), behavior: "auto" });
+  }
+
   elements.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === tabName));
   Object.entries(elements.panels).forEach(([name, panel]) => {
     panel.classList.toggle("active", name === tabName);
