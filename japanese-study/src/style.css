@@ -548,6 +548,24 @@ label {
   text-align: center;
 }
 
+#kanaPanel .kana-card {
+  height: 196px;
+  grid-template-rows: minmax(0, 1fr) 27px 27px;
+  overflow: hidden;
+}
+
+#kanaPanel .kana-card .hidden {
+  display: block;
+  visibility: hidden;
+}
+
+#kanaPanel .kana-character {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+
 .kana-character {
   margin: 0;
   font-size: var(--kana-size);
@@ -759,7 +777,7 @@ label {
 .kana-tile {
   display: grid;
   gap: 4px;
-  min-height: 88px;
+  height: 88px;
   width: 100%;
   place-items: center;
   border: 1px solid var(--line);
@@ -1007,7 +1025,7 @@ label {
   }
 
   .kana-tile {
-    min-height: 64px;
+    height: 64px;
     border-radius: 9px;
     padding: 6px 2px;
   }
